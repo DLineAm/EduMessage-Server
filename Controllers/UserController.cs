@@ -13,7 +13,6 @@ namespace SignalIRServerTest.Controllers
     public class UserController : Controller
     {
         private UnitOfWork _unitOfWork = new UnitOfWork();
-        //private EducationContext db = new EducationContext();
 
         [Authorize]
         [HttpPut("UploadImage")]
@@ -32,18 +31,6 @@ namespace SignalIRServerTest.Controllers
                     _unitOfWork.UserRepository.Update(findedUser);
                     _unitOfWork.Save();
                 }
-
-                //var user = await db.Users.FindAsync(userId);
-
-                //if (user == null)
-                //{
-                //    return false;
-                //}
-
-                //user.Image = image;
-
-                //db.Update(user);
-                //await db.SaveChangesAsync();
 
                 return true;
             }

@@ -92,7 +92,7 @@ namespace SignalIRServerTest.Models
             {
                 DbSet.Attach(entityToUpdate);
             }
-            //DbSet.Attach(entityToUpdate);
+
             Context.Entry(entityToUpdate).State = EntityState.Modified;
         }
 
