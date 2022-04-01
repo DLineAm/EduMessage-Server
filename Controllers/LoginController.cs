@@ -76,14 +76,8 @@ namespace SignalIRServerTest.Controllers
                 $"{nameof(SignalIRServerTest.User.IdGroupNavigation)}," +
                 $"{nameof(SignalIRServerTest.User.IdEducationFormNavigation)}," +
                 $"IdGroupNavigation.IdSpecialityNavigation");
-            //var list = await db.Users
-            //    .Include(u => u.IdRoleNavigation)
-            //    .Include(u => u.IdCityNavigation)
-            //    .Include(u => u.IdSchoolNavigation)
-            //    .Include(u => u.IdGroupNavigation)
-            //    .Include(u => u.IdEducationFormNavigation)
-            //    .Include(u => u.IdGroupNavigation.IdSpecialityNavigation)
-            //    .ToListAsync();
+
+
             try
             {
                 User findedUser = list.FirstOrDefault(p => p.Login == loginemail || p.Email == loginemail && p.Password == password);
@@ -110,7 +104,6 @@ namespace SignalIRServerTest.Controllers
 
             var schools = _unitOfWork.SchoolReposytory.Get(filter: s => s.IdCity == city.Id);
 
-            //var schools = (await db.Schools.ToListAsync()).Where(p => p.IdCity == city.Id).ToList();
             return schools.ToList();
         }
 
@@ -118,7 +111,6 @@ namespace SignalIRServerTest.Controllers
         public async Task<List<Speciality>> GetSpecialities()
         {
             var list = _unitOfWork.SpecialityRepository.Get();
-            //var list = await db.Specialities.ToListAsync();
             return list.ToList();
         }
 
@@ -126,7 +118,6 @@ namespace SignalIRServerTest.Controllers
         public async Task<List<Group>> GetGroups()
         {
             var list = _unitOfWork.GroupRepository.Get();
-            //var list = await db.Groups.ToListAsync();
             return list.ToList();
         }
 
@@ -134,7 +125,6 @@ namespace SignalIRServerTest.Controllers
         public async Task<List<Group>> GetGroupsFromSpeciality([FromRoute] int idSpeciality)
         {
             var list = _unitOfWork.GroupRepository.Get(filter: g => g.IdSpeciality == idSpeciality);
-            //var list = (await db.Groups.ToListAsync()).Where(f => f.IdSpeciality == idSpeciality).ToList();
             return list.ToList();
         }
 
@@ -142,9 +132,7 @@ namespace SignalIRServerTest.Controllers
         public async Task<Speciality> GetSpecialityFromGroup([FromRoute] int idGroup)
         {
             var group = _unitOfWork.GroupRepository.GetById(idGroup);
-            //var group = await db.Groups.FirstOrDefaultAsync(g => g.Id == idGroup);
             var speciality = _unitOfWork.SpecialityRepository.GetById(group.Id);
-            //var speciality = await db.Specialities.FirstOrDefaultAsync(s => s.Id == group.Id);
             return speciality;
         }
 
@@ -153,7 +141,6 @@ namespace SignalIRServerTest.Controllers
         {
             var list = _unitOfWork.RoleRepository.Get();
             return list.ToList();
-            //return await db.Roles.ToListAsync();
         }
 
         [HttpGet("EducationForms")]
@@ -161,14 +148,12 @@ namespace SignalIRServerTest.Controllers
         {
             var list = _unitOfWork.EducationFormRepository.Get();
             return list.ToList();
-            //return await db.EducationForms.ToListAsync();
         }
 
         [HttpGet("Validate.phone={phone}")]
         public async Task<bool> ValidatePhone([FromRoute] string phone)
         {
             var result = _unitOfWork.UserRepository.GetByExpression(u=> u.Phone.ToString() == phone) == null;
-            //var result = await db.Users.FirstOrDefaultAsync(u => u.Phone.ToString() == phone) == null;
             return true;
         }
 
@@ -176,8 +161,6 @@ namespace SignalIRServerTest.Controllers
         public async Task<bool> ValidateEmail([FromRoute] string email)
         {
             var result = _unitOfWork.UserRepository.GetByExpression(u => u.Email == email) == null;
-
-            //var result = await db.Users.FirstOrDefaultAsync(u => u.Email == email) == null;
             return result;
         }
 
@@ -185,8 +168,6 @@ namespace SignalIRServerTest.Controllers
         public async Task<bool> ValidateLogin([FromRoute] string login)
         {
             var result = _unitOfWork.UserRepository.GetByExpression(u => u.Login == login) == null;
-
-            //var result = await db.Users.FirstOrDefaultAsync(u => u.Login == login) == null;
             return result;
         }
 
@@ -207,16 +188,6 @@ namespace SignalIRServerTest.Controllers
 
                 var savedUser = _unitOfWork.UserRepository.Insert(user).Entity;
                 _unitOfWork.Save();
-                //db.Entry(user).State = EntityState.Added;
-                //if (user.IdRole == 1)
-                //{
-                //    db.Entry(user.IdGroupNavigation).State = EntityState.Detached;
-                //}
-                //db.Entry(user.IdCityNavigation).State = EntityState.Detached;
-
-                //var result = await db.Users.AddAsync(user);
-                //await db.SaveChangesAsync();
-                //var savedUser = result.Entity;
                 var jwt = CreateJwtToken(savedUser);
                 return new KeyValuePair<int, string>(savedUser.Id, jwt);
             }
@@ -250,14 +221,6 @@ namespace SignalIRServerTest.Controllers
                 $"IdGroupNavigation.IdSpecialityNavigation",
                 filter: u => u.Id.ToString() == claims.First().Value)
                 .FirstOrDefault();
-            //var user = await db.Users
-            //    .Include(u => u.IdRoleNavigation)
-            //    .Include(u => u.IdCityNavigation)
-            //    .Include(u => u.IdSchoolNavigation)
-            //    .Include(u => u.IdGroupNavigation)
-            //    .Include(u => u.IdEducationFormNavigation)
-            //    .Include(u => u.IdGroupNavigation.IdSpecialityNavigation)
-            //    .FirstOrDefaultAsync(u => u.Id.ToString() == claims.First().Value);
 
             return user;
         }
