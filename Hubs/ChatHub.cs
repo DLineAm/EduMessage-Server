@@ -11,6 +11,10 @@ namespace SignalIRServerTest.Hubs
     [HubName("ChatHub")]
     public class ChatHub : Hub
     {
+        public override Task OnConnectedAsync()
+        {
+            return base.OnConnectedAsync();
+        }
         public async Task Send(string message)
         {
             await this.Clients.All.SendAsync("send", message);

@@ -23,9 +23,13 @@ namespace SignalIRServerTest.Controllers
     [Route("[controller]")]
     public class LoginController : Controller
     {
-        private UnitOfWork _unitOfWork = new UnitOfWork();
+        private readonly UnitOfWork _unitOfWork;
         //private static EducationContext db = new EducationContext();
 
+        public LoginController(UnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
 
         [HttpGet("Send.email={email}")]
         public bool SendEmailCode([FromRoute] string email)
@@ -53,18 +57,12 @@ namespace SignalIRServerTest.Controllers
         [HttpGet("Cities")]
         public async Task<List<City>> GetCities()
         {
-            var list = _unitOfWork.CityReposytory.Get();
+            var list = _unitOfWork.CityRepository.Get();
             //var list = await db.Cities.ToListAsync();
             return list.ToList();
         }
 
-        [HttpGet("Users")]
-        public async Task<List<User>> GetUsers()
-        {
-            var list = _unitOfWork.UserRepository.Get();
-            //var list = await db.Users.ToListAsync();
-            return list.ToList();
-        }
+
 
         [HttpGet("Users.login={loginemail}.password={password}")]
         public async Task<KeyValuePair<User, string>> GetUserForLogin([FromRoute] string loginemail, [FromRoute] string password)
@@ -102,7 +100,23 @@ namespace SignalIRServerTest.Controllers
                 return null;
             }
 
-            var schools = _unitOfWork.SchoolReposytory.Get(filter: s => s.IdCity == city.Id);
+            var schools = _unitOfWork.SchoolRepository.Get(filter: s => s.IdCity == city.Id);
+
+            return schools.ToList();
+        }
+
+        [HttpGet("Schools")]
+        public async Task<List<School>> GetSchools()
+        {
+            var schools = _unitOfWork.SchoolRepository.Get();
+
+            return schools.ToList();
+        }
+
+        [HttpGet("Schools.searchText={searchText}")]
+        public async Task<List<School>> GetSchoolsFromSearch([FromRoute] string searchText)
+        {
+            var schools = _unitOfWork.SchoolRepository.Get(filter: s => s.Name.ToLower().Contains(searchText.ToLower()));
 
             return schools.ToList();
         }
@@ -177,9 +191,9 @@ namespace SignalIRServerTest.Controllers
             try
             {
                 var group = _unitOfWork.GroupRepository.GetById(user.IdGroup);
-                var city = _unitOfWork.CityReposytory.GetById(user.IdCity);
+                var city = _unitOfWork.CityRepository.GetById(user.IdCity);
                 var role = _unitOfWork.RoleRepository.GetById(user.IdRole);
-                var school = _unitOfWork.SchoolReposytory.GetById(user.IdSchool);
+                var school = _unitOfWork.SchoolRepository.GetById(user.IdSchool);
 
                 user.IdCityNavigation = city;
                 user.IdGroupNavigation = group;

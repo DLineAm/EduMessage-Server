@@ -15,7 +15,12 @@ namespace SignalIRServerTest.Controllers
     public class EducationController : Controller
     {
         private readonly UnitOfWork _unitOfWork = new UnitOfWork();
-        public EducationContext db = new EducationContext();
+        //public EducationContext db = new EducationContext();
+
+        public EducationController(UnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
 
         [Authorize]
         [HttpGet("Courses.SpecialityId={id}")]
@@ -145,16 +150,6 @@ namespace SignalIRServerTest.Controllers
             {
                 return false;
             }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db.Dispose();
-                _unitOfWork.Dispose();
-            }
-            base.Dispose(disposing);
         }
     }
 }

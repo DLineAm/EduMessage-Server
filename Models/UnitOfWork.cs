@@ -25,10 +25,10 @@ namespace SignalIRServerTest.Models
         public EducationRepository<Course> CourseRepository => _courseRepository 
             ??= new EducationRepository<Course>(_context);
 
-        public EducationRepository<City> CityReposytory => _cityRepository
+        public EducationRepository<City> CityRepository => _cityRepository
             ??= new EducationRepository<City>(_context);
 
-        public EducationRepository<School> SchoolReposytory => _schoolRepository
+        public EducationRepository<School> SchoolRepository => _schoolRepository
             ??= new EducationRepository<School>(_context);
 
         public EducationRepository<Speciality> SpecialityRepository => _specialityRepository
