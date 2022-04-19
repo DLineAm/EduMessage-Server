@@ -5,14 +5,13 @@ using System.Collections.Generic;
 
 namespace SignalIRServerTest.Models
 {
-    public partial class Device
+    public partial class UserConversation
     {
         public int Id { get; set; }
-        public int IdUser { get; set; }
-        public string Name { get; set; }
-        public DateTime CreateDate { get; set; }
-        public int? SerialNumber { get; set; }
+        public int? IdUser { get; set; }
+        public int? IdConversation { get; set; }
 
+        public virtual Conversation IdConversationNavigation { get; set; }
         public virtual User IdUserNavigation { get; set; }
     }
 }

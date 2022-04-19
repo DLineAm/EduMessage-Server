@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 #nullable disable
 
-namespace SignalIRServerTest
+namespace SignalIRServerTest.Models
 {
-    public partial class CourseAttachment : IEquatable<CourseAttachment>
+    public partial class CourseAttachment
     {
         public int Id { get; set; }
         public int? IdCourse { get; set; }
@@ -14,15 +13,5 @@ namespace SignalIRServerTest
 
         public virtual Attachment IdAttachmanentNavigation { get; set; }
         public virtual Course IdCourseNavigation { get; set; }
-
-        public bool Equals([AllowNull] CourseAttachment other)
-        {
-            return this.Id == other.Id;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return Equals(obj);
-        }
     }
 }

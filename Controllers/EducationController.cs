@@ -14,7 +14,7 @@ namespace SignalIRServerTest.Controllers
     [Route("[controller]")]
     public class EducationController : Controller
     {
-        private readonly UnitOfWork _unitOfWork = new UnitOfWork();
+        private readonly UnitOfWork _unitOfWork;
         //public EducationContext db = new EducationContext();
 
         public EducationController(UnitOfWork unitOfWork)

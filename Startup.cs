@@ -14,7 +14,14 @@ using SignalIRServerTest.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using SignalIRServerTest.Services;
 
 namespace SignalIRServerTest
 {
@@ -31,6 +38,7 @@ namespace SignalIRServerTest
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
             services.AddSignalR();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -50,6 +58,7 @@ namespace SignalIRServerTest
                 });
             services.AddScoped<ChatHub>();
             services.AddScoped<UnitOfWork>();
+            services.AddSingleton<IUserIdProvider, UserProvider>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -70,7 +79,11 @@ namespace SignalIRServerTest
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHub<ChatHub>("~/signalr");
+                endpoints.MapHub<ChatHub>("~/Chat", options =>
+                {
+                    options.LongPolling.PollTimeout = TimeSpan.FromMinutes(1);
+                    options.Transports = HttpTransportType.LongPolling | HttpTransportType.WebSockets;
+                });
             });
         }
     }

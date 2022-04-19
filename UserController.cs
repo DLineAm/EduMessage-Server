@@ -30,7 +30,7 @@ namespace SignalIRServerTest
             var id =  identity.Claims.First().Value;
 
             var list = _unitOfWork.UserRepository.Get(
-                includeProperties: $"{nameof(SignalIRServerTest.User.IdSchoolNavigation)}").ToList();
+                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}").ToList();
             var user = list.FirstOrDefault(u => u.Id.ToString() == id);
             list.Remove(user);
             return list.ToList();
@@ -48,7 +48,7 @@ namespace SignalIRServerTest
             var id =  identity.Claims.First().Value;
 
             var list = _unitOfWork.UserRepository.Get(
-                includeProperties: $"{nameof(SignalIRServerTest.User.IdSchoolNavigation)}")
+                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}")
                 .ToList();
             if (roleId != -1)
             {

@@ -68,11 +68,11 @@ namespace SignalIRServerTest.Controllers
         public async Task<KeyValuePair<User, string>> GetUserForLogin([FromRoute] string loginemail, [FromRoute] string password)
         {
             var list = _unitOfWork.UserRepository.Get(
-                includeProperties: $"{nameof(SignalIRServerTest.User.IdRoleNavigation)}," +
-                $"{nameof(SignalIRServerTest.User.IdCityNavigation)}," +
-                $"{nameof(SignalIRServerTest.User.IdSchoolNavigation)}," +
-                $"{nameof(SignalIRServerTest.User.IdGroupNavigation)}," +
-                $"{nameof(SignalIRServerTest.User.IdEducationFormNavigation)}," +
+                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdRoleNavigation)}," +
+                $"{nameof(SignalIRServerTest.Models.User.IdCityNavigation)}," +
+                $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}," +
+                $"{nameof(SignalIRServerTest.Models.User.IdGroupNavigation)}," +
+                $"{nameof(SignalIRServerTest.Models.User.IdEducationFormNavigation)}," +
                 $"IdGroupNavigation.IdSpecialityNavigation");
 
 
@@ -227,11 +227,11 @@ namespace SignalIRServerTest.Controllers
             var claims = identity.Claims;
 
             var user = _unitOfWork.UserRepository.Get(
-                includeProperties: $"{nameof(SignalIRServerTest.User.IdRoleNavigation)}," +
-                $"{nameof(SignalIRServerTest.User.IdCityNavigation)}," +
-                $"{nameof(SignalIRServerTest.User.IdSchoolNavigation)}," +
-                $"{nameof(SignalIRServerTest.User.IdGroupNavigation)}," +
-                $"{nameof(SignalIRServerTest.User.IdEducationFormNavigation)}," +
+                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdRoleNavigation)}," +
+                $"{nameof(SignalIRServerTest.Models.User.IdCityNavigation)}," +
+                $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}," +
+                $"{nameof(SignalIRServerTest.Models.User.IdGroupNavigation)}," +
+                $"{nameof(SignalIRServerTest.Models.User.IdEducationFormNavigation)}," +
                 $"IdGroupNavigation.IdSpecialityNavigation",
                 filter: u => u.Id.ToString() == claims.First().Value)
                 .FirstOrDefault();

@@ -6,23 +6,22 @@ using System.Text.Json.Serialization;
 
 namespace SignalIRServerTest.Models
 {
-    public partial class Attachment
+    public partial class Conversation
     {
-        public Attachment()
+        public Conversation()
         {
-            CourseAttachments = new HashSet<CourseAttachment>();
             Messages = new HashSet<Message>();
+            UserConversations = new HashSet<UserConversation>();
         }
 
         public int Id { get; set; }
         public string Title { get; set; }
-        public int IdType { get; set; }
-        public byte[] Data { get; set; }
+        public int? IdAdminUser { get; set; }
+        public byte[] Image { get; set; }
 
-        public virtual AttachmentType IdTypeNavigation { get; set; }
-        [JsonIgnore]
-        public virtual ICollection<CourseAttachment> CourseAttachments { get; set; }
         [JsonIgnore]
         public virtual ICollection<Message> Messages { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<UserConversation> UserConversations { get; set; }
     }
 }

@@ -1,10 +1,11 @@
 ﻿using System;
+using SignalIRServerTest.Models.Context;
 
 namespace SignalIRServerTest.Models
 {
     public class UnitOfWork : IDisposable
     {
-        private EducationContext _context = new EducationContext();
+        private readonly EducationContext _context = new EducationContext();
         private EducationRepository<CourseAttachment> _courseAttachmentRepository;
         private EducationRepository<User> _userRepository;
         private EducationRepository<Course> _courseRepository;
@@ -14,6 +15,8 @@ namespace SignalIRServerTest.Models
         private EducationRepository<Group> _groupRepository;
         private EducationRepository<Role> _roleRepository;
         private EducationRepository<EducationForm> _educationFormRepository;
+        private EducationRepository<Conversation> _conversationFormRepository;
+        private EducationRepository<UserConversation> _userConversationFormRepository;
 
 
         public EducationRepository<CourseAttachment> CourseAttachmentRepository => _courseAttachmentRepository 
@@ -43,12 +46,19 @@ namespace SignalIRServerTest.Models
         public EducationRepository<EducationForm> EducationFormRepository => _educationFormRepository
             ??= new EducationRepository<EducationForm>(_context);
 
+        public EducationRepository<Conversation> ConversationFormRepository => _conversationFormRepository
+        ??= new EducationRepository<Conversation>(_context);
+
+        public EducationRepository<UserConversation> UserConversationFormRepository => _userConversationFormRepository
+        ??= new EducationRepository<UserConversation>(_context);
+
         public void Save()
         {
             _context.SaveChanges();
         }
 
-        private bool disposed;
+        private bool _disposed;
+
 
         public void Dispose()
         {
@@ -58,7 +68,7 @@ namespace SignalIRServerTest.Models
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposed)
+            if (!_disposed)
             {
                 if (disposing)
                 {
@@ -66,7 +76,12 @@ namespace SignalIRServerTest.Models
                 }
             }
 
-            this.disposed = true;
+            this._disposed = true;
+        }
+
+        ~UnitOfWork()
+        {
+            Dispose(true);
         }
 
     }

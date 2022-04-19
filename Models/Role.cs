@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 #nullable disable
 
-namespace SignalIRServerTest
+namespace SignalIRServerTest.Models
 {
     public partial class Role
     {

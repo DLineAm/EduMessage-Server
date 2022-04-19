@@ -1,23 +1,36 @@
-﻿using Microsoft.AspNet.SignalR.Hubs;
+﻿using System;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using SignalIRServerTest.Models;
+using Hub = Microsoft.AspNetCore.SignalR.Hub;
 
 namespace SignalIRServerTest.Hubs
 {
     [HubName("ChatHub")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public class ChatHub : Hub
     {
-        public override Task OnConnectedAsync()
+        public async Task SendAll(string message)
         {
-            return base.OnConnectedAsync();
+            await this.Clients.AllExcept(new List<string> { Context.ConnectionId }).SendAsync("Send", message);
         }
-        public async Task Send(string message)
+
+        public async Task SendToUser(string message, int userId)
         {
-            await this.Clients.All.SendAsync("send", message);
+            var unitOfWork = new UnitOfWork();
+            int id = Convert.ToInt32(Context.User.Claims.First().Value);
+            var user = unitOfWork.UserRepository.GetById(id);
+            if (id != userId)
+            {
+                await Clients.User(userId.ToString())
+                    .SendAsync("ReceiveForMe", message, user!);
+            }
         }
     }
 }

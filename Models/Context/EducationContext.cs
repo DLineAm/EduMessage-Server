@@ -1,10 +1,11 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using SignalIRServerTest.Models;
 
 #nullable disable
 
-namespace SignalIRServerTest
+namespace SignalIRServerTest.Models.Context
 {
     public partial class EducationContext : DbContext
     {
@@ -20,6 +21,7 @@ namespace SignalIRServerTest
         public virtual DbSet<Attachment> Attachments { get; set; }
         public virtual DbSet<AttachmentType> AttachmentTypes { get; set; }
         public virtual DbSet<City> Cities { get; set; }
+        public virtual DbSet<Conversation> Conversations { get; set; }
         public virtual DbSet<Course> Courses { get; set; }
         public virtual DbSet<CourseAttachment> CourseAttachments { get; set; }
         public virtual DbSet<Device> Devices { get; set; }
@@ -32,6 +34,7 @@ namespace SignalIRServerTest
         public virtual DbSet<School> Schools { get; set; }
         public virtual DbSet<Speciality> Specialities { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<UserConversation> UserConversations { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -39,7 +42,6 @@ namespace SignalIRServerTest
             {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
                 optionsBuilder.UseSqlServer(Program.HomeConnectionString);
-                optionsBuilder.EnableSensitiveDataLogging();
             }
         }
 
@@ -50,6 +52,8 @@ namespace SignalIRServerTest
             modelBuilder.Entity<Attachment>(entity =>
             {
                 entity.ToTable("Attachment");
+
+                entity.HasIndex(e => e.IdType, "IX_Attachment_IdType");
 
                 entity.Property(e => e.Data).IsRequired();
 
@@ -82,9 +86,20 @@ namespace SignalIRServerTest
                     .HasMaxLength(50);
             });
 
+            modelBuilder.Entity<Conversation>(entity =>
+            {
+                entity.ToTable("Conversation");
+
+                entity.Property(e => e.Image).HasColumnType("image");
+
+                entity.Property(e => e.Title).HasMaxLength(50);
+            });
+
             modelBuilder.Entity<Course>(entity =>
             {
                 entity.ToTable("Course");
+
+                entity.HasIndex(e => e.IdSpeciality, "IX_Course_IdSpeciality");
 
                 entity.Property(e => e.Description).HasMaxLength(50);
 
@@ -100,6 +115,10 @@ namespace SignalIRServerTest
             {
                 entity.ToTable("CourseAttachment");
 
+                entity.HasIndex(e => e.IdAttachmanent, "IX_CourseAttachment_IdAttachmanent");
+
+                entity.HasIndex(e => e.IdCourse, "IX_CourseAttachment_IdCourse");
+
                 entity.HasOne(d => d.IdAttachmanentNavigation)
                     .WithMany(p => p.CourseAttachments)
                     .HasForeignKey(d => d.IdAttachmanent)
@@ -114,6 +133,8 @@ namespace SignalIRServerTest
             modelBuilder.Entity<Device>(entity =>
             {
                 entity.ToTable("Device");
+
+                entity.HasIndex(e => e.IdUser, "IX_Device_IdUser");
 
                 entity.Property(e => e.CreateDate).HasColumnType("date");
 
@@ -159,6 +180,10 @@ namespace SignalIRServerTest
             {
                 entity.ToTable("Group");
 
+                entity.HasIndex(e => e.IdFaculty, "IX_Group_IdFaculty");
+
+                entity.HasIndex(e => e.IdSpeciality, "IX_Group_IdSpeciality");
+
                 entity.Property(e => e.Title)
                     .IsRequired()
                     .HasMaxLength(50);
@@ -179,6 +204,12 @@ namespace SignalIRServerTest
             {
                 entity.ToTable("Message");
 
+                entity.HasIndex(e => e.IdAttachments, "IX_Message_IdAttachments");
+
+                entity.HasIndex(e => e.IdRecipient, "IX_Message_IdRecipient");
+
+                entity.HasIndex(e => e.IdUser, "IX_Message_IdUser");
+
                 entity.Property(e => e.MessageContent).IsRequired();
 
                 entity.Property(e => e.SendDate).HasColumnType("datetime");
@@ -187,6 +218,11 @@ namespace SignalIRServerTest
                     .WithMany(p => p.Messages)
                     .HasForeignKey(d => d.IdAttachments)
                     .HasConstraintName("FK_Message_Attachment");
+
+                entity.HasOne(d => d.IdConversationNavigation)
+                    .WithMany(p => p.Messages)
+                    .HasForeignKey(d => d.IdConversation)
+                    .HasConstraintName("FK_Message_Conversation");
 
                 entity.HasOne(d => d.IdRecipientNavigation)
                     .WithMany(p => p.MessageIdRecipientNavigations)
@@ -210,6 +246,10 @@ namespace SignalIRServerTest
             modelBuilder.Entity<School>(entity =>
             {
                 entity.ToTable("School");
+
+                entity.HasIndex(e => e.IdCity, "IX_School_IdCity");
+
+                entity.HasIndex(e => e.IdEducationType, "IX_School_IdEducationType");
 
                 entity.Property(e => e.Address).IsRequired();
 
@@ -244,6 +284,16 @@ namespace SignalIRServerTest
             modelBuilder.Entity<User>(entity =>
             {
                 entity.ToTable("User");
+
+                entity.HasIndex(e => e.IdCity, "IX_User_IdCity");
+
+                entity.HasIndex(e => e.IdEducationForm, "IX_User_IdEducationForm");
+
+                entity.HasIndex(e => e.IdGroup, "IX_User_IdGroup");
+
+                entity.HasIndex(e => e.IdRole, "IX_User_IdRole");
+
+                entity.HasIndex(e => e.IdSchool, "IX_User_IdSchool");
 
                 entity.Property(e => e.Email)
                     .IsRequired()
@@ -295,6 +345,21 @@ namespace SignalIRServerTest
                     .HasForeignKey(d => d.IdSchool)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_User_School");
+            });
+
+            modelBuilder.Entity<UserConversation>(entity =>
+            {
+                entity.ToTable("UserConversation");
+
+                entity.HasOne(d => d.IdConversationNavigation)
+                    .WithMany(p => p.UserConversations)
+                    .HasForeignKey(d => d.IdConversation)
+                    .HasConstraintName("FK_UserConversation_Conversation");
+
+                entity.HasOne(d => d.IdUserNavigation)
+                    .WithMany(p => p.UserConversations)
+                    .HasForeignKey(d => d.IdUser)
+                    .HasConstraintName("FK_UserConversation_User");
             });
 
             OnModelCreatingPartial(modelBuilder);

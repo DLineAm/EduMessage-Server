@@ -1,12 +1,10 @@
-﻿
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 #nullable disable
 
-namespace SignalIRServerTest
+namespace SignalIRServerTest.Models
 {
     public partial class User
     {
@@ -15,6 +13,7 @@ namespace SignalIRServerTest
             Devices = new HashSet<Device>();
             MessageIdRecipientNavigations = new HashSet<Message>();
             MessageIdUserNavigations = new HashSet<Message>();
+            UserConversations = new HashSet<UserConversation>();
         }
 
         public int Id { get; set; }
@@ -38,11 +37,12 @@ namespace SignalIRServerTest
         public virtual Group IdGroupNavigation { get; set; }
         public virtual Role IdRoleNavigation { get; set; }
         public virtual School IdSchoolNavigation { get; set; }
-        [JsonIgnore]
         public virtual ICollection<Device> Devices { get; set; }
         [JsonIgnore]
         public virtual ICollection<Message> MessageIdRecipientNavigations { get; set; }
         [JsonIgnore]
         public virtual ICollection<Message> MessageIdUserNavigations { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<UserConversation> UserConversations { get; set; }
     }
 }
