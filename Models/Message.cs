@@ -20,6 +20,7 @@ namespace SignalIRServerTest.Models
         public int IdUser { get; set; }
         public int? IdRecipient { get; set; }
         public int? IdConversation { get; set; }
+        public bool IsChanged { get; set; }
 
         public virtual Conversation IdConversationNavigation { get; set; }
         public virtual User IdRecipientNavigation { get; set; }
