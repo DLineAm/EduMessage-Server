@@ -37,6 +37,7 @@ namespace SignalIRServerTest.Models
         public virtual Group IdGroupNavigation { get; set; }
         public virtual Role IdRoleNavigation { get; set; }
         public virtual School IdSchoolNavigation { get; set; }
+        [JsonIgnore]
         public virtual ICollection<Device> Devices { get; set; }
         [JsonIgnore]
         public virtual ICollection<Message> MessageIdRecipientNavigations { get; set; }

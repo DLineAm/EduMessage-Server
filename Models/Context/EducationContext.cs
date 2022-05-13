@@ -30,6 +30,7 @@ namespace SignalIRServerTest.Models.Context
         public virtual DbSet<Faculty> Faculties { get; set; }
         public virtual DbSet<Group> Groups { get; set; }
         public virtual DbSet<Message> Messages { get; set; }
+        public virtual DbSet<MessageAttachment> MessageAttachments { get; set; }
         public virtual DbSet<Role> Roles { get; set; }
         public virtual DbSet<School> Schools { get; set; }
         public virtual DbSet<Speciality> Specialities { get; set; }
@@ -214,11 +215,6 @@ namespace SignalIRServerTest.Models.Context
 
                 entity.Property(e => e.SendDate).HasColumnType("datetime");
 
-                entity.HasOne(d => d.IdAttachmentsNavigation)
-                    .WithMany(p => p.Messages)
-                    .HasForeignKey(d => d.IdAttachments)
-                    .HasConstraintName("FK_Message_Attachment");
-
                 entity.HasOne(d => d.IdConversationNavigation)
                     .WithMany(p => p.Messages)
                     .HasForeignKey(d => d.IdConversation)
@@ -234,6 +230,21 @@ namespace SignalIRServerTest.Models.Context
                     .HasForeignKey(d => d.IdUser)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Message_User");
+            });
+
+            modelBuilder.Entity<MessageAttachment>(entity =>
+            {
+                entity.ToTable("MessageAttachment");
+
+                entity.HasOne(d => d.IdAttachmentNavigation)
+                    .WithMany(p => p.MessageAttachments)
+                    .HasForeignKey(d => d.IdAttachment)
+                    .HasConstraintName("FK_MessageAttachment_Attachment");
+
+                entity.HasOne(d => d.IdMessageNavigation)
+                    .WithMany(p => p.MessageAttachments)
+                    .HasForeignKey(d => d.IdMessage)
+                    .HasConstraintName("FK_MessageAttachment_Message");
             });
 
             modelBuilder.Entity<Role>(entity =>

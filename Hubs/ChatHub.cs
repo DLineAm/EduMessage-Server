@@ -21,15 +21,154 @@ namespace SignalIRServerTest.Hubs
             await this.Clients.AllExcept(new List<string> { Context.ConnectionId }).SendAsync("Send", message);
         }
 
-        public async Task SendToUser(string message, int userId)
+        public async Task ChangeMessage(List<MessageAttachment> messageAttachments)
         {
-            var unitOfWork = new UnitOfWork();
-            int id = Convert.ToInt32(Context.User.Claims.First().Value);
-            var user = unitOfWork.UserRepository.GetById(id);
-            if (id != userId)
+            try
             {
-                await Clients.User(userId.ToString())
-                    .SendAsync("ReceiveForMe", message, user!);
+                var message = messageAttachments?.FirstOrDefault()?.IdMessageNavigation;
+
+                var conversationId = message?.IdConversation;
+
+                if (conversationId == null)
+                {
+                    return;
+                }
+
+                var unitOfWork = new UnitOfWork();
+                unitOfWork.MessageRepository.Update(message);
+
+                unitOfWork.MessageAttachmentRepository
+                    .Get(filter: m => m.IdMessage == message.Id)
+                    .Where(m => messageAttachments.All(ma => ma.Id != m.Id))
+                    .ToList()
+                    .ForEach(unitOfWork.MessageAttachmentRepository.Delete);
+
+                foreach (var messageAttachment in messageAttachments)
+                {
+                    messageAttachment.IdMessageNavigation = null;
+                    if (messageAttachment.Id == 0)
+                    {
+                        unitOfWork.MessageAttachmentRepository.Insert(messageAttachment);
+                        continue;
+                    }
+
+                    unitOfWork.MessageAttachmentRepository.Update(messageAttachment);
+                }
+
+                unitOfWork.Save();
+
+                await SendToUsersInConversation(conversationId, "MessageChanged", messageAttachments);
+            }
+            catch (Exception e)
+            {
+
+            }
+        }
+
+        public async Task DeleteMessage(int messageId)
+        {
+            try
+            {
+                var unitOfWork = new UnitOfWork();
+
+                var attachments = unitOfWork.MessageAttachmentRepository
+                    .Get(filter: m => m.IdMessage == messageId,
+                        includeProperties:$"{nameof(MessageAttachment.IdMessageNavigation)}")
+                    .ToList();
+
+
+                var dbMessage = unitOfWork.MessageRepository
+                    .GetById(messageId);
+                int? conversationId = dbMessage.IdConversation;
+
+                unitOfWork.MessageRepository.Delete(dbMessage);
+                attachments.ForEach(unitOfWork.MessageAttachmentRepository.Delete);
+                unitOfWork.Save();
+
+                attachments.ForEach( a => a.IdMessageNavigation = dbMessage);
+
+                await SendToUsersInConversation(conversationId, "ReceiveDeletedMessage", messageId);
+            }
+            catch (Exception e)
+            {
+
+            }
+        }
+
+        private async Task SendToUsersInConversation(int? conversationId, string methodName, object arg1)
+        {
+            int id = Convert.ToInt32(Context.User.Claims.First().Value);
+
+            using var unitOfWork = new UnitOfWork();
+
+            var users = unitOfWork.UserConversationFormRepository
+                .Get(filter: m => m.IdConversation == conversationId && m.IdUser != id)
+                .Select(c => c.IdUser);
+
+            foreach (var userInConversationId in users)
+            {
+                if (userInConversationId == null)
+                {
+                    continue;
+                }
+
+                await Clients.User(userInConversationId.ToString())
+                    .SendAsync(methodName, arg1);
+            }
+        }
+
+        public async Task<bool> SendToUser(List<MessageAttachment> messageList, int userId)
+        {
+            if (messageList == null || messageList.Count == 0)
+            {
+                return false;
+            }
+            try
+            {
+                var unitOfWork = new UnitOfWork();
+                Message message = messageList.FirstOrDefault().IdMessageNavigation;
+
+                var dbMessage = unitOfWork.MessageRepository.Insert(message).Entity;
+                unitOfWork.Save();
+
+                messageList.ForEach(m =>
+                {
+                    m.IdMessage = dbMessage.Id;
+                    m.IdMessageNavigation = null;
+                    unitOfWork.MessageAttachmentRepository.Insert(m);
+                    unitOfWork.Save();
+                });
+                var idString = Context.User.Claims.First().Value;
+                int id = Convert.ToInt32(idString);
+                User user = unitOfWork.UserRepository.GetById(id);
+
+                var conversation = dbMessage.IdConversation;
+                var users = unitOfWork.UserConversationFormRepository
+                    .Get(filter: m => m.IdConversation == conversation && m.IdUser != id)
+                    .Select(c => c.IdUser);
+
+                foreach (var userInConversationId in users)
+                {
+                    if (userInConversationId == null)
+                    {
+                        continue;
+                    }
+
+                    await Clients.User(userInConversationId.ToString())
+                        .SendAsync("ReceiveForMe", messageList, user!);
+                }
+
+                await Clients.User(idString)
+                    .SendAsync("ReceiveAddedMessage", dbMessage.Id);
+
+                //await Clients.User(userId.ToString())
+                //    .SendAsync("ReceiveForMe", messageList, user!);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
             }
         }
     }

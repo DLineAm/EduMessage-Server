@@ -13,7 +13,7 @@ namespace SignalIRServerTest.Controllers
     [Route("[controller]")]
     public class MessageController : Controller
     {
-        private UnitOfWork _unitOfWork;
+         private UnitOfWork _unitOfWork;
 
         public MessageController(UnitOfWork unitOfWork)
         {
@@ -42,6 +42,38 @@ namespace SignalIRServerTest.Controllers
                     .FirstOrDefault(cv => c.IdConversation == cv.IdConversation) != null && c.IdUser.ToString() != id);
 
             return allConversations.ToList();
+        }
+
+        [HttpGet("Id={id}")]
+        [Authorize]
+        public List<MessageAttachment> GetMessageAttachmentsByConversationId([FromRoute] int id)
+        {
+            if (id == 0)
+            {
+                return null;
+            }
+
+            //var replaceMessages = _unitOfWork.MessageAttachmentRepository
+            //    .Get(filter: m => m.IdMessageNavigation.MessageContent == String.Empty,
+            //        includeProperties: $"{nameof(MessageAttachment.IdMessageNavigation)}," +
+            //                           $"{nameof(MessageAttachment.IdAttachmentNavigation)}," +
+            //                           $"IdMessageNavigation.{nameof(Message.IdUserNavigation)}");
+
+            //replaceMessages.ToList().ForEach(m =>
+            //{
+            //    _unitOfWork.MessageAttachmentRepository.Delete(m);
+            //    _unitOfWork.MessageRepository.Delete(m.IdMessage);
+            //});
+            //_unitOfWork.Save();
+
+            var messages = _unitOfWork.MessageAttachmentRepository
+                .Get(filter: m => m.IdMessageNavigation.IdConversation == id,
+                    includeProperties: $"{nameof(MessageAttachment.IdMessageNavigation)}," +
+                                       $"{nameof(MessageAttachment.IdAttachmentNavigation)}," +
+                                       $"IdMessageNavigation.{nameof(Message.IdUserNavigation)}," +
+                                       $"{nameof(MessageAttachment.IdAttachmentNavigation)}.{nameof(Attachment.IdTypeNavigation)}");
+
+            return messages.ToList();
         }
 
         [HttpGet("idUser={idUser}&title={title}")]

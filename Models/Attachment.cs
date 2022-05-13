@@ -11,7 +11,7 @@ namespace SignalIRServerTest.Models
         public Attachment()
         {
             CourseAttachments = new HashSet<CourseAttachment>();
-            Messages = new HashSet<Message>();
+            MessageAttachments = new HashSet<MessageAttachment>();
         }
 
         public int Id { get; set; }
@@ -23,6 +23,6 @@ namespace SignalIRServerTest.Models
         [JsonIgnore]
         public virtual ICollection<CourseAttachment> CourseAttachments { get; set; }
         [JsonIgnore]
-        public virtual ICollection<Message> Messages { get; set; }
+        public virtual ICollection<MessageAttachment> MessageAttachments { get; set; }
     }
 }

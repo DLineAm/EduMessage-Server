@@ -17,6 +17,9 @@ namespace SignalIRServerTest.Models
         private EducationRepository<EducationForm> _educationFormRepository;
         private EducationRepository<Conversation> _conversationFormRepository;
         private EducationRepository<UserConversation> _userConversationFormRepository;
+        private EducationRepository<Message> _messageRepository;
+        private EducationRepository<MessageAttachment> _messageAttachmentRepository;
+        private EducationRepository<Attachment> _attachmentRepository;
 
 
         public EducationRepository<CourseAttachment> CourseAttachmentRepository => _courseAttachmentRepository 
@@ -51,6 +54,15 @@ namespace SignalIRServerTest.Models
 
         public EducationRepository<UserConversation> UserConversationFormRepository => _userConversationFormRepository
         ??= new EducationRepository<UserConversation>(_context);
+
+        public EducationRepository<Message> MessageRepository => _messageRepository
+        ??= new EducationRepository<Message>(_context);
+
+        public EducationRepository<MessageAttachment> MessageAttachmentRepository => _messageAttachmentRepository
+        ??= new EducationRepository<MessageAttachment>(_context);
+
+        public EducationRepository<Attachment> AttachmentRepository => _attachmentRepository
+        ??= new EducationRepository<Attachment>(_context);
 
         public void Save()
         {
