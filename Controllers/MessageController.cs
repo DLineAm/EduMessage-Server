@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -139,6 +139,58 @@ namespace SignalIRServerTest.Controllers
             catch (Exception e)
             {
                 return new KeyValuePair<int, List<int>>(-1, null);
+            }
+        }
+
+        [HttpPut("Change")]
+        [Authorize]
+        public async Task<bool> ChangeMessage([FromBody] List<MessageAttachment> messageAttachments)
+        {
+            try
+            {
+                var message = messageAttachments?.FirstOrDefault()?.IdMessageNavigation;
+
+                var conversationId = message?.IdConversation;
+
+                if (conversationId == null)
+                {
+                    return false;
+                }
+
+                _unitOfWork.MessageRepository.Update(message);
+
+                _unitOfWork.MessageAttachmentRepository
+                    .Get(filter: m => m.IdMessage == message.Id)
+                    .Where(m => messageAttachments.All(ma => ma.Id != m.Id))
+                    .ToList()
+                    .ForEach(_unitOfWork.MessageAttachmentRepository.Delete);
+
+                messageAttachments.ForEach(ma =>
+                {
+                    if (ma.IdAttachment != 0)
+                    {
+                        ma.IdAttachmentNavigation = null;
+                    }
+                });
+
+                foreach (var messageAttachment in messageAttachments)
+                {
+                    messageAttachment.IdMessageNavigation = null;
+                    if (messageAttachment.Id == 0)
+                    {
+                        _unitOfWork.MessageAttachmentRepository.Insert(messageAttachment);
+                        continue;
+                    }
+                    _unitOfWork.MessageAttachmentRepository.Update(messageAttachment);
+                }
+
+                _unitOfWork.Save();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
             }
         }
     }

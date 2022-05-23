@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "AfBnoLLzL82sGUfOARULpf5/35sKotiD9hunv7PDl/tEzfPkJH4PpMJWHokw/2vp2J24w5zxpO0NF1uoDaVvXA==",
+  "dgSpecHash": "xaEgNVwWdgXqW9z0YziBlNsJKvOb2KFHN6ACYZnrJjWit+PfhzO6pJ2YFfNevKf/++ae9lV5T9iAbnUMT2JakQ==",
   "success": true,
-  "projectFilePath": "C:\\Users\\pocht\\Desktop\\EduMessage-Server\\SignalIRServerTest.csproj",
+  "projectFilePath": "G:\\Диплом\\EduMessage-Server\\SignalIRServerTest.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\pocht\\.nuget\\packages\\humanizer.core\\2.8.26\\humanizer.core.2.8.26.nupkg.sha512",
     "C:\\Users\\pocht\\.nuget\\packages\\microsoft.aspnet.identity.core\\2.2.3\\microsoft.aspnet.identity.core.2.2.3.nupkg.sha512",

@@ -21,41 +21,25 @@ namespace SignalIRServerTest.Hubs
             await this.Clients.AllExcept(new List<string> { Context.ConnectionId }).SendAsync("Send", message);
         }
 
-        public async Task ChangeMessage(List<MessageAttachment> messageAttachments)
+        public async Task ChangeMessage(int messageId)
         {
             try
             {
-                var message = messageAttachments?.FirstOrDefault()?.IdMessageNavigation;
-
-                var conversationId = message?.IdConversation;
-
-                if (conversationId == null)
+                var unitOfWork = new UnitOfWork();
+                var message = unitOfWork.MessageRepository
+                    .GetById(messageId);
+                if (message == null)
                 {
                     return;
                 }
 
-                var unitOfWork = new UnitOfWork();
-                unitOfWork.MessageRepository.Update(message);
+                var messageAttachments = unitOfWork.MessageAttachmentRepository
+                    .Get(includeProperties:$"{nameof(MessageAttachment.IdAttachmentNavigation)}," +
+                                           $"{nameof(MessageAttachment.IdMessageNavigation)}",
+                        filter: a => a.IdMessage == messageId);
 
-                unitOfWork.MessageAttachmentRepository
-                    .Get(filter: m => m.IdMessage == message.Id)
-                    .Where(m => messageAttachments.All(ma => ma.Id != m.Id))
-                    .ToList()
-                    .ForEach(unitOfWork.MessageAttachmentRepository.Delete);
-
-                foreach (var messageAttachment in messageAttachments)
-                {
-                    messageAttachment.IdMessageNavigation = null;
-                    if (messageAttachment.Id == 0)
-                    {
-                        unitOfWork.MessageAttachmentRepository.Insert(messageAttachment);
-                        continue;
-                    }
-
-                    unitOfWork.MessageAttachmentRepository.Update(messageAttachment);
-                }
-
-                unitOfWork.Save();
+                var conversationId = message.IdConversation;
+                
 
                 await SendToUsersInConversation(conversationId, "MessageChanged", messageAttachments);
             }
@@ -79,6 +63,10 @@ namespace SignalIRServerTest.Hubs
 
                 var dbMessage = unitOfWork.MessageRepository
                     .GetById(messageId);
+                if (dbMessage == null)
+                {
+                    return;
+                }
                 int? conversationId = dbMessage.IdConversation;
 
                 unitOfWork.MessageRepository.Delete(dbMessage);
