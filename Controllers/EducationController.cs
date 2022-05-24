@@ -118,6 +118,7 @@ namespace SignalIRServerTest.Controllers
 
                 onDeleteList.ToList().ForEach(i =>
                 {
+
                     _unitOfWork.CourseAttachmentRepository.Delete(i);
                     _unitOfWork.Save();
                 });
@@ -126,6 +127,12 @@ namespace SignalIRServerTest.Controllers
                 {
                     if (courseAttachment.Id == 0)
                     {
+                        if (courseAttachment.IdAttachmanent != 0 &&
+                            courseAttachment.IdAttachmanent != null)
+                        {
+                            courseAttachment.IdAttachmanentNavigation = null;
+                        }
+                        courseAttachment.IdCourseNavigation = null;
                         _unitOfWork.CourseAttachmentRepository.Insert(courseAttachment);
                     }
                     else
@@ -140,6 +147,9 @@ namespace SignalIRServerTest.Controllers
 
                         foundDbCourse.Title = courseAttachment.IdCourseNavigation.Title;
                         foundDbCourse.Description = courseAttachment.IdCourseNavigation.Description;
+                        dbCourseAttachment.IdAttachmanentNavigation = courseAttachment.IdAttachmanentNavigation;
+                        dbCourseAttachment.IdAttachmanent = courseAttachment.IdAttachmanent;
+                        _unitOfWork.CourseAttachmentRepository.Update(dbCourseAttachment);
                     }
                 }
 

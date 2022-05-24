@@ -83,7 +83,7 @@ namespace SignalIRServerTest.Controllers
                 var userFromLogin = list
                         .FirstOrDefault(u => u.Login == loginemail || u.Email == loginemail);
 
-                if (userFromLogin == null)
+                if (userFromLogin == null || userFromLogin.Deleted)
                 {
                     return new KeyValuePair<User, string>(null, null);
                 }
@@ -245,16 +245,6 @@ namespace SignalIRServerTest.Controllers
                 return new KeyValuePair<int, string>(-1, null);
 
             }
-        }
-
-        [HttpGet("TestAtt")]
-        public async Task<MessageAttachment> GetTest()
-        {
-            return _unitOfWork.MessageAttachmentRepository
-                .Get(filter: m => m.IdAttachmentNavigation.Data != null,
-                     includeProperties: $"{nameof(MessageAttachment.IdAttachmentNavigation)}," +
-                             $"{nameof(MessageAttachment.IdMessageNavigation)}")
-                .FirstOrDefault();
         }
 
         [HttpGet("GetUser.ByToken")]
