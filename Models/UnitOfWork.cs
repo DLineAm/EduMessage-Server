@@ -20,6 +20,7 @@ namespace SignalIRServerTest.Models
         private EducationRepository<Message> _messageRepository;
         private EducationRepository<MessageAttachment> _messageAttachmentRepository;
         private EducationRepository<Attachment> _attachmentRepository;
+        private EducationRepository<Device> _deviceRepository;
 
 
         public EducationRepository<CourseAttachment> CourseAttachmentRepository => _courseAttachmentRepository 
@@ -63,6 +64,9 @@ namespace SignalIRServerTest.Models
 
         public EducationRepository<Attachment> AttachmentRepository => _attachmentRepository
         ??= new EducationRepository<Attachment>(_context);
+
+        public EducationRepository<Device> DeviceRepository => _deviceRepository
+        ??= new EducationRepository<Device>(_context);
 
         public void Save()
         {

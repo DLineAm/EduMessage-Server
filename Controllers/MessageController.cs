@@ -142,6 +142,49 @@ namespace SignalIRServerTest.Controllers
             }
         }
 
+        [HttpPost("AddMessage")]
+        [Authorize]
+        public async Task<int> AddMessage([FromBody] List<MessageAttachment> messageList)
+        {
+            if (messageList == null || messageList.Count == 0)
+            {
+                return -1;
+            }
+
+            try
+            {
+
+                var unitOfWork = new UnitOfWork();
+                Message message = messageList.FirstOrDefault().IdMessageNavigation;
+
+                var dbMessage = unitOfWork.MessageRepository
+                    .Insert(message)
+                    .Entity;
+                unitOfWork.Save();
+
+                messageList.ForEach(m =>
+                {
+                    m.IdMessage = dbMessage.Id;
+                    m.IdMessageNavigation = null;
+                    unitOfWork.MessageAttachmentRepository.Insert(m);
+                    unitOfWork.Save();
+                });
+                //int id = Convert.ToInt32(idString);
+                //User user = unitOfWork.UserRepository.GetById(id);
+
+                //var conversation = dbMessage.IdConversation;
+                //var users = unitOfWork.UserConversationFormRepository
+                //    .Get(filter: m => m.IdConversation == conversation && m.IdUser != id)
+                //    .Select(c => c.IdUser);
+
+                return dbMessage.Id;
+            }
+            catch (Exception e)
+            {
+                return -1;
+            }
+        }
+
         [HttpPut("Change")]
         [Authorize]
         public async Task<bool> ChangeMessage([FromBody] List<MessageAttachment> messageAttachments)

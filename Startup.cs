@@ -16,12 +16,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNet.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using SignalIRServerTest.Services;
+using IUserIdProvider = Microsoft.AspNetCore.SignalR.IUserIdProvider;
 
 namespace SignalIRServerTest
 {
@@ -56,6 +57,7 @@ namespace SignalIRServerTest
                         ValidateIssuerSigningKey = true
                     };
                 });
+            services.AddScoped<Hash>();
             services.AddScoped<ChatHub>();
             services.AddScoped<UnitOfWork>();
             services.AddSingleton<IUserIdProvider, UserProvider>();

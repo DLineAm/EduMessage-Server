@@ -3,10 +3,14 @@ using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Newtonsoft.Json;
 using SignalIRServerTest.Models;
 using Hub = Microsoft.AspNetCore.SignalR.Hub;
 
@@ -105,27 +109,30 @@ namespace SignalIRServerTest.Hubs
             }
         }
 
-        public async Task<bool> SendToUser(List<MessageAttachment> messageList, int userId)
+        public async Task<bool> SendToUser(int messageId, int userId)
         {
-            if (messageList == null || messageList.Count == 0)
-            {
-                return false;
-            }
+            //var messageList = JsonConvert.DeserializeObject<List<MessageAttachment>>(messageString);
             try
             {
                 var unitOfWork = new UnitOfWork();
-                Message message = messageList.FirstOrDefault().IdMessageNavigation;
+                var messageList = unitOfWork.MessageAttachmentRepository
+                    .Get(filter: m => m.IdMessage == messageId,
+                        includeProperties: $"{nameof(MessageAttachment.IdMessageNavigation)}," +
+                                           $"{nameof(MessageAttachment.IdAttachmentNavigation)}");
+                var dbMessage = messageList.FirstOrDefault().IdMessageNavigation;
 
-                var dbMessage = unitOfWork.MessageRepository.Insert(message).Entity;
-                unitOfWork.Save();
+                //Message message = messageList.FirstOrDefault().IdMessageNavigation;
 
-                messageList.ForEach(m =>
-                {
-                    m.IdMessage = dbMessage.Id;
-                    m.IdMessageNavigation = null;
-                    unitOfWork.MessageAttachmentRepository.Insert(m);
-                    unitOfWork.Save();
-                });
+                //var dbMessage = unitOfWork.MessageRepository.Insert(message).Entity;
+                //unitOfWork.Save();
+
+                //messageList.ForEach(m =>
+                //{
+                //    m.IdMessage = dbMessage.Id;
+                //    m.IdMessageNavigation = null;
+                //    unitOfWork.MessageAttachmentRepository.Insert(m);
+                //    unitOfWork.Save();
+                //});
                 var idString = Context.User.Claims.First().Value;
                 int id = Convert.ToInt32(idString);
                 User user = unitOfWork.UserRepository.GetById(id);

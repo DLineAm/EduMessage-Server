@@ -135,6 +135,8 @@ namespace SignalIRServerTest.Models.Context
             {
                 entity.ToTable("Device");
 
+                entity.HasKey(e => e.SerialNumber);
+
                 entity.HasIndex(e => e.IdUser, "IX_Device_IdUser");
 
                 entity.Property(e => e.CreateDate).HasColumnType("date");
@@ -326,9 +328,9 @@ namespace SignalIRServerTest.Models.Context
 
                 entity.Property(e => e.MiddleName).HasMaxLength(50);
 
-                entity.Property(e => e.Password)
-                    .IsRequired()
-                    .HasMaxLength(16);
+                //entity.Property(e => e.Password)
+                //    .IsRequired()
+                //    .HasMaxLength(16);
 
                 entity.HasOne(d => d.IdCityNavigation)
                     .WithMany(p => p.Users)

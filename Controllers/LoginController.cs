@@ -24,11 +24,14 @@ namespace SignalIRServerTest.Controllers
     public class LoginController : Controller
     {
         private readonly UnitOfWork _unitOfWork;
+
+        private readonly Hash _hash;
         //private static EducationContext db = new EducationContext();
 
-        public LoginController(UnitOfWork unitOfWork)
+        public LoginController(UnitOfWork unitOfWork, Hash hash)
         {
             _unitOfWork = unitOfWork;
+            _hash = hash;
         }
 
         [HttpGet("Send.email={email}")]
@@ -67,29 +70,53 @@ namespace SignalIRServerTest.Controllers
         [HttpGet("Users.login={loginemail}.password={password}")]
         public async Task<KeyValuePair<User, string>> GetUserForLogin([FromRoute] string loginemail, [FromRoute] string password)
         {
-            var list = _unitOfWork.UserRepository.Get(
-                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdRoleNavigation)}," +
-                $"{nameof(SignalIRServerTest.Models.User.IdCityNavigation)}," +
-                $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}," +
-                $"{nameof(SignalIRServerTest.Models.User.IdGroupNavigation)}," +
-                $"{nameof(SignalIRServerTest.Models.User.IdEducationFormNavigation)}," +
-                $"IdGroupNavigation.IdSpecialityNavigation");
-
-
             try
             {
-                User findedUser = list.FirstOrDefault(p => p.Login == loginemail || p.Email == loginemail && p.Password == password);
-                if (findedUser == null)
+                var list = _unitOfWork.UserRepository.Get(
+                        includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdRoleNavigation)}," +
+                        $"{nameof(SignalIRServerTest.Models.User.IdCityNavigation)}," +
+                        $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}," +
+                        $"{nameof(SignalIRServerTest.Models.User.IdGroupNavigation)}," +
+                        $"{nameof(SignalIRServerTest.Models.User.IdEducationFormNavigation)}," +
+                        $"IdGroupNavigation.IdSpecialityNavigation");
+
+                var userFromLogin = list
+                        .FirstOrDefault(u => u.Login == loginemail || u.Email == loginemail);
+
+                if (userFromLogin == null)
                 {
                     return new KeyValuePair<User, string>(null, null);
                 }
-                var jwt = CreateJwtToken(findedUser);
-                return new KeyValuePair<User, string>(findedUser, jwt);
+
+                var hashedPassword = _hash.CompareString(password, userFromLogin.Salt, userFromLogin.PasswordHash);
+
+                if (!hashedPassword)
+                {
+                    return new KeyValuePair<User, string>(null, null);
+                }
+
+                var jwt = CreateJwtToken(userFromLogin);
+                return new KeyValuePair<User, string>(userFromLogin, jwt);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 return new KeyValuePair<User, string>(null, null);
             }
+
+            //try
+            //{
+            //    User findedUser = list.FirstOrDefault(p => p.Login == loginemail || p.Email == loginemail && p.Password == password);
+            //    if (findedUser == null)
+            //    {
+            //        return new KeyValuePair<User, string>(null, null);
+            //    }
+            //    var jwt = CreateJwtToken(findedUser);
+            //    return new KeyValuePair<User, string>(findedUser, jwt);
+            //}
+            //catch (System.Exception e)
+            //{
+            //    return new KeyValuePair<User, string>(null, null);
+            //}
         }
 
         [HttpPost("Schools")]
@@ -186,10 +213,15 @@ namespace SignalIRServerTest.Controllers
         }
 
         [HttpPost("Register")]
-        public async Task<KeyValuePair<int, string>> RegisterUser([FromBody] User user)
+        public async Task<KeyValuePair<int, string>> RegisterUser(
+            [FromBody] KeyValuePair<User, string> pair)
         {
             try
             {
+                var user = pair.Key;
+                var password = pair.Value;
+                var saltedPassword = _hash.GetHashedString(password, out var salt);
+
                 var group = _unitOfWork.GroupRepository.GetById(user.IdGroup);
                 var city = _unitOfWork.CityRepository.GetById(user.IdCity);
                 var role = _unitOfWork.RoleRepository.GetById(user.IdRole);
@@ -199,6 +231,8 @@ namespace SignalIRServerTest.Controllers
                 user.IdGroupNavigation = group;
                 user.IdRoleNavigation = role;
                 user.IdSchoolNavigation = school;
+                user.PasswordHash = saltedPassword;
+                user.Salt = salt;
 
                 var savedUser = _unitOfWork.UserRepository.Insert(user).Entity;
                 _unitOfWork.Save();
@@ -213,6 +247,16 @@ namespace SignalIRServerTest.Controllers
             }
         }
 
+        [HttpGet("TestAtt")]
+        public async Task<MessageAttachment> GetTest()
+        {
+            return _unitOfWork.MessageAttachmentRepository
+                .Get(filter: m => m.IdAttachmentNavigation.Data != null,
+                     includeProperties: $"{nameof(MessageAttachment.IdAttachmentNavigation)}," +
+                             $"{nameof(MessageAttachment.IdMessageNavigation)}")
+                .FirstOrDefault();
+        }
+
         [HttpGet("GetUser.ByToken")]
         [Authorize]
         public async Task<User> GetUserByToken()
@@ -225,6 +269,19 @@ namespace SignalIRServerTest.Controllers
             }
 
             var claims = identity.Claims;
+
+            //var users = _unitOfWork.UserRepository
+            //    .Get(filter: u => u.PasswordHash == null);
+
+            //foreach (var user1 in users)
+            //{
+            //    var hashedPassword = _hash.GetHashedString(user1.Password, out var salt);
+            //    user1.PasswordHash = hashedPassword;
+            //    user1.Salt = salt;
+            //    _unitOfWork.UserRepository.Update(user1);
+            //}
+
+            //_unitOfWork.Save();
 
             var user = _unitOfWork.UserRepository.Get(
                 includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdRoleNavigation)}," +
