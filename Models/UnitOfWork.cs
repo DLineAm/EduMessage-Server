@@ -3,7 +3,11 @@ using SignalIRServerTest.Models.Context;
 
 namespace SignalIRServerTest.Models
 {
-    public class UnitOfWork : IDisposable
+    public interface IUnitOfWork
+    {
+
+    }
+    public class UnitOfWork : IDisposable, IUnitOfWork
     {
         private readonly EducationContext _context = new EducationContext();
         private EducationRepository<CourseAttachment> _courseAttachmentRepository;
@@ -21,6 +25,7 @@ namespace SignalIRServerTest.Models
         private EducationRepository<MessageAttachment> _messageAttachmentRepository;
         private EducationRepository<Attachment> _attachmentRepository;
         private EducationRepository<Device> _deviceRepository;
+        private EducationRepository<MainCourse> _mainCourseRepository;
 
 
         public EducationRepository<CourseAttachment> CourseAttachmentRepository => _courseAttachmentRepository 
@@ -67,6 +72,9 @@ namespace SignalIRServerTest.Models
 
         public EducationRepository<Device> DeviceRepository => _deviceRepository
         ??= new EducationRepository<Device>(_context);
+
+        public EducationRepository<MainCourse> MainCourseRepository => _mainCourseRepository
+        ??= new EducationRepository<MainCourse>(_context);
 
         public void Save()
         {

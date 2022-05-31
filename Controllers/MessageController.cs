@@ -5,8 +5,9 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.Extensions.Logging;
 using SignalIRServerTest.Models;
+using SignalIRServerTest.Services;
 
 namespace SignalIRServerTest.Controllers
 {
@@ -14,11 +15,13 @@ namespace SignalIRServerTest.Controllers
     public class MessageController : Controller
     {
          private UnitOfWork _unitOfWork;
+         private readonly ILogger<MessageController> _logger;
 
-        public MessageController(UnitOfWork unitOfWork)
-        {
-            _unitOfWork = unitOfWork;
-        }
+         public MessageController(UnitOfWork unitOfWork, ILogger<MessageController> logger)
+         {
+             _unitOfWork = unitOfWork;
+             _logger = logger;
+         }
 
         [HttpGet("All")]
         [Authorize]
@@ -34,8 +37,10 @@ namespace SignalIRServerTest.Controllers
             var listWithUser = _unitOfWork.UserConversationFormRepository.Get(filter: u => u.IdUser.ToString() == id);
 
             var allConversations = _unitOfWork.UserConversationFormRepository.Get(
-                includeProperties: $"{nameof(UserConversation.IdUserNavigation)}," +
-                                   $"{nameof(UserConversation.IdConversationNavigation)}")
+                includeProperties: 
+                                   $"{nameof(UserConversation.IdUserNavigation)}.{nameof(UserConversation.IdUserNavigation.IdRoleNavigation)}," +
+                                   $"{nameof(UserConversation.IdConversationNavigation)},"
+                                   )
                 .ToList()
                 .Where(c => listWithUser
                     .ToList()
@@ -138,6 +143,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddConversation)));
                 return new KeyValuePair<int, List<int>>(-1, null);
             }
         }
@@ -181,6 +187,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddMessage)));
                 return -1;
             }
         }
@@ -210,7 +217,7 @@ namespace SignalIRServerTest.Controllers
 
                 messageAttachments.ForEach(ma =>
                 {
-                    if (ma.IdAttachment != 0)
+                    if (ma.IdAttachment != 0 && ma.IdAttachment != null)
                     {
                         ma.IdAttachmentNavigation = null;
                     }
@@ -233,6 +240,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeMessage)));
                 return false;
             }
         }

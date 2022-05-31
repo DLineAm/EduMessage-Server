@@ -17,6 +17,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using SignalIRServerTest.Controllers.Interceptors;
 
 namespace SignalIRServerTest.Controllers
 {
@@ -26,13 +28,24 @@ namespace SignalIRServerTest.Controllers
         private readonly UnitOfWork _unitOfWork;
 
         private readonly Hash _hash;
+
+        private readonly ILogger<LoginController> _logger;
+
         //private static EducationContext db = new EducationContext();
 
-        public LoginController(UnitOfWork unitOfWork, Hash hash)
+        public LoginController(UnitOfWork unitOfWork, Hash hash, ILogger<LoginController> logger)
         {
             _unitOfWork = unitOfWork;
             _hash = hash;
+            _logger = logger;
+
         }
+
+        //[HttpGet("Testt")]
+        //public bool GetTest(Aboba aboba)
+        //{
+        //    return aboba.GetResult();
+        //}
 
         [HttpGet("Send.email={email}")]
         public bool SendEmailCode([FromRoute] string email)
@@ -46,6 +59,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (System.Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(GetUserForLogin)));
                 return false;
             }
         }
@@ -100,6 +114,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(GetUserForLogin)));
                 return new KeyValuePair<User, string>(null, null);
             }
 
@@ -241,7 +256,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (System.Exception e)
             {
-
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(RegisterUser)));
                 return new KeyValuePair<int, string>(-1, null);
 
             }

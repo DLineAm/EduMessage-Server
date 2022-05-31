@@ -8,7 +8,13 @@ using SignalIRServerTest.Models.Context;
 
 namespace SignalIRServerTest.Models
 {
-    public class EducationRepository<TEntity> where TEntity : class
+    public interface IRepository<TEntity>
+    {
+         IEnumerable<TEntity> Get(Expression<Func<TEntity, bool>> filter = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+            string includeProperties = "");
+    }
+    public class EducationRepository<TEntity> : IRepository<TEntity> where TEntity : class
     {
         internal EducationContext Context;
         internal DbSet<TEntity> DbSet;

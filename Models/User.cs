@@ -47,5 +47,8 @@ namespace SignalIRServerTest.Models
         public virtual ICollection<Message> MessageIdUserNavigations { get; set; }
         [JsonIgnore]
         public virtual ICollection<UserConversation> UserConversations { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<Course> Courses { get; set; }
+
     }
 }

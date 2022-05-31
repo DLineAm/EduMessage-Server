@@ -2,7 +2,9 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using SignalIRServerTest.Models;
+using SignalIRServerTest.Services;
 
 namespace SignalIRServerTest.Controllers
 {
@@ -10,10 +12,12 @@ namespace SignalIRServerTest.Controllers
     public class DeviceController : Controller
     {
         private UnitOfWork _unitOfWork;
+        private readonly ILogger<DeviceController> _logger;
 
-        public DeviceController(UnitOfWork unitOfWork)
+        public DeviceController(UnitOfWork unitOfWork, ILogger<DeviceController> logger)
         {
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         [HttpGet("Validate")]
@@ -39,6 +43,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddDevice)));
                 return false;
             }
         }

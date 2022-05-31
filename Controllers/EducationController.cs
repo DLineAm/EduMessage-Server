@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+using SignalIRServerTest.Models;
+using SignalIRServerTest.Services;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
-using SignalIRServerTest.Models;
 
 namespace SignalIRServerTest.Controllers
 {
@@ -15,20 +16,34 @@ namespace SignalIRServerTest.Controllers
     public class EducationController : Controller
     {
         private readonly UnitOfWork _unitOfWork;
+
+        private readonly ILogger<EducationController> _logger;
         //public EducationContext db = new EducationContext();
 
-        public EducationController(UnitOfWork unitOfWork)
+        public EducationController(UnitOfWork unitOfWork, ILogger<EducationController> logger)
         {
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         [Authorize]
-        [HttpGet("Courses.SpecialityId={id}")]
+        [HttpGet("Courses.IdMainCourse={id:int}")]
         public List<CourseAttachment> GetCourseBySpeciality([FromRoute] int id)
         {
             var courses = _unitOfWork.CourseAttachmentRepository.Get(
-                includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)},{nameof(CourseAttachment.IdAttachmanentNavigation)}",
-                filter: c => c.IdCourseNavigation.IdSpeciality == id);
+                includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)},{nameof(CourseAttachment.IdAttachmanentNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTeacherNavigation)}",
+                filter: c => c.IdCourseNavigation.IdMainCourse == id);
+
+            return courses.ToList();
+        }
+
+        [Authorize]
+        [HttpGet("Courses.IdSpeciality={id:int}")]
+        public List<MainCourse> GetMainCoursesById([FromRoute] int id)
+        {
+            var courses = _unitOfWork.MainCourseRepository.Get(
+                filter: c => c.IdSpeciality == id);
 
             return courses.ToList();
         }
@@ -49,7 +64,7 @@ namespace SignalIRServerTest.Controllers
                         course.IdCourseNavigation = addedCourse;
                     }
 
-                    course.IdCourseNavigation.IdSpecialityNavigation = null;
+                    course.IdCourseNavigation.IdMainCourseNavigation = null;
 
                     var entry = _unitOfWork.CourseAttachmentRepository.Insert(course);
                     _unitOfWork.Save();
@@ -64,6 +79,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddCourseAsync)));
                 return new KeyValuePair<int, List<int>>(-1, null);
             }
         }      
@@ -88,6 +104,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(DeleteCourse)));
                 return false;
             }
         }
@@ -158,6 +175,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeCourse)));
                 return false;
             }
         }

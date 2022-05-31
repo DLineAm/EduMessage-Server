@@ -100,16 +100,32 @@ namespace SignalIRServerTest.Models.Context
             {
                 entity.ToTable("Course");
 
-                entity.HasIndex(e => e.IdSpeciality, "IX_Course_IdSpeciality");
+                entity.HasIndex(e => e.IdMainCourse, "IX_Course_IdMainCourse");
+                entity.HasIndex(e => e.IdTeacher, "IX_Course_User");
 
                 entity.Property(e => e.Description).HasMaxLength(50);
 
                 entity.Property(e => e.Title).HasMaxLength(50);
 
-                entity.HasOne(d => d.IdSpecialityNavigation)
+                entity.HasOne(d => d.IdMainCourseNavigation)
+                    .WithMany(p => p.Course)
+                    .HasForeignKey(d => d.IdMainCourse)
+                    .HasConstraintName("FK_Course_MainCourse");
+
+                entity.HasOne(d => d.IdTeacherNavigation)
                     .WithMany(p => p.Courses)
+                    .HasForeignKey(d => d.IdTeacher)
+                    .HasConstraintName("FK_Course_User");
+            });
+
+            modelBuilder.Entity<MainCourse>(entity =>
+            {
+                entity.ToTable("MainCourse");
+                entity.HasIndex(e => e.IdSpeciality, "IX_MainCourse_IdSpeciality");
+                entity.HasOne(d => d.IdSpecialityNavigation)
+                    .WithMany(p => p.MainCourse)
                     .HasForeignKey(d => d.IdSpeciality)
-                    .HasConstraintName("FK_Course_Speciality");
+                    .HasConstraintName("FK_MainCourse_Speciality");
             });
 
             modelBuilder.Entity<CourseAttachment>(entity =>

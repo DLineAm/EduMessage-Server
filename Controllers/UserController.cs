@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using SignalIRServerTest.Models;
 using SignalIRServerTest.Services;
 
@@ -15,11 +16,13 @@ namespace SignalIRServerTest.Controllers
     {
         private UnitOfWork _unitOfWork;
         private Hash _hash;
+        private readonly ILogger<UserController> _logger;
 
-        public UserController(UnitOfWork unitOfWork, Hash hash)
+        public UserController(UnitOfWork unitOfWork, Hash hash, ILogger<UserController> logger)
         {
             _unitOfWork = unitOfWork;
             _hash = hash;
+            _logger = logger;
         }
 
 
@@ -45,6 +48,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(UploadImage)));
                 return false;
             }
         }
@@ -78,6 +82,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(DeleteUser)));
                 return "Exception";
             }
         }

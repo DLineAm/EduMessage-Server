@@ -10,7 +10,7 @@ namespace SignalIRServerTest.Models
     {
         public Speciality()
         {
-            Courses = new HashSet<Course>();
+            MainCourse = new HashSet<MainCourse>();
             Groups = new HashSet<Group>();
         }
 
@@ -19,7 +19,7 @@ namespace SignalIRServerTest.Models
         public string Title { get; set; }
 
         [JsonIgnore]
-        public virtual ICollection<Course> Courses { get; set; }
+        public virtual ICollection<MainCourse> MainCourse { get; set; }
         [JsonIgnore]
         public virtual ICollection<Group> Groups { get; set; }
     }

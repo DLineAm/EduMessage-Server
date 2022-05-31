@@ -1,27 +1,18 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 using SignalIRServerTest.Hubs;
 using SignalIRServerTest.Models;
+using SignalIRServerTest.Models.Context;
+using SignalIRServerTest.Services;
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.AspNet.SignalR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Connections;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using SignalIRServerTest.Services;
+
 using IUserIdProvider = Microsoft.AspNetCore.SignalR.IUserIdProvider;
 
 namespace SignalIRServerTest
@@ -30,7 +21,7 @@ namespace SignalIRServerTest
     {
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;           
+            Configuration = configuration;
         }
 
         public IConfiguration Configuration { get; }
@@ -57,9 +48,11 @@ namespace SignalIRServerTest
                         ValidateIssuerSigningKey = true
                     };
                 });
+
             services.AddScoped<Hash>();
             services.AddScoped<ChatHub>();
             services.AddScoped<UnitOfWork>();
+            services.AddScoped<EducationContext>();
             services.AddSingleton<IUserIdProvider, UserProvider>();
         }
 
