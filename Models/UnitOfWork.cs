@@ -26,6 +26,7 @@ namespace SignalIRServerTest.Models
         private EducationRepository<Attachment> _attachmentRepository;
         private EducationRepository<Device> _deviceRepository;
         private EducationRepository<MainCourse> _mainCourseRepository;
+        private EducationRepository<CourseTask> _courseTaskRepository;
 
 
         public EducationRepository<CourseAttachment> CourseAttachmentRepository => _courseAttachmentRepository 
@@ -75,6 +76,9 @@ namespace SignalIRServerTest.Models
 
         public EducationRepository<MainCourse> MainCourseRepository => _mainCourseRepository
         ??= new EducationRepository<MainCourse>(_context);
+
+        public EducationRepository<CourseTask> CourseTaskRepository => _courseTaskRepository
+        ??= new EducationRepository<CourseTask>(_context);
 
         public void Save()
         {

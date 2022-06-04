@@ -102,6 +102,7 @@ namespace SignalIRServerTest.Models.Context
 
                 entity.HasIndex(e => e.IdMainCourse, "IX_Course_IdMainCourse");
                 entity.HasIndex(e => e.IdTeacher, "IX_Course_User");
+                entity.HasIndex(e => e.IdTeacher, "IX_Course_CourseTask");
 
                 entity.Property(e => e.Description).HasMaxLength(50);
 
@@ -116,6 +117,17 @@ namespace SignalIRServerTest.Models.Context
                     .WithMany(p => p.Courses)
                     .HasForeignKey(d => d.IdTeacher)
                     .HasConstraintName("FK_Course_User");
+
+                entity.HasOne(d => d.IdCourseTaskNavigation)
+                    .WithMany(p => p.Course)
+                    .HasForeignKey(d => d.IdTask)
+                    .HasConstraintName("FK_Course_CourseTask");
+            });
+
+            modelBuilder.Entity<CourseTask>(entity =>
+            {
+                entity.ToTable("CourseTask");
+                entity.HasKey(d => d.Id);
             });
 
             modelBuilder.Entity<MainCourse>(entity =>
@@ -136,6 +148,8 @@ namespace SignalIRServerTest.Models.Context
 
                 entity.HasIndex(e => e.IdCourse, "IX_CourseAttachment_IdCourse");
 
+                entity.HasIndex(e => e.IdCourse, "IX_CourseAttachment_IdStatus");
+
                 entity.HasOne(d => d.IdAttachmanentNavigation)
                     .WithMany(p => p.CourseAttachments)
                     .HasForeignKey(d => d.IdAttachmanent)
@@ -145,6 +159,11 @@ namespace SignalIRServerTest.Models.Context
                     .WithMany(p => p.CourseAttachments)
                     .HasForeignKey(d => d.IdCourse)
                     .HasConstraintName("FK_CourseAttachment_Course");
+
+                entity.HasOne(d => d.IdTaskStatusNavigation)
+                    .WithMany(p => p.CourseAttachment)
+                    .HasForeignKey(d => d.IdStatus)
+                    .HasConstraintName("FK_CourseAttachment_TaskStatus");
             });
 
             modelBuilder.Entity<Device>(entity =>

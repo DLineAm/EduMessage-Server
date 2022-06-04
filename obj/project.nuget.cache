@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "AI3VF94+RXGjLfk74+dPbjssVzn/T+kKzkLERan1HNu5akuSRAck/l8ZMjG9M7OkMj4g2oX2WKR5/KzI/LOe4Q==",
+  "dgSpecHash": "jnt2amR7BeTb5PNtr16t7iMcDnQlDZn90B/cWZU53xZngNwe52YzhqTkx5nxfKC0cpMCp5dewt5CYfTotf4amA==",
   "success": true,
-  "projectFilePath": "G:\\Диплом\\EduMessage-Server\\SignalIRServerTest.csproj",
+  "projectFilePath": "C:\\Users\\pocht\\Desktop\\EduMessage-Server\\SignalIRServerTest.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\pocht\\.nuget\\packages\\castle.core\\5.0.0\\castle.core.5.0.0.nupkg.sha512",
     "C:\\Users\\pocht\\.nuget\\packages\\castle.windsor\\5.1.2\\castle.windsor.5.1.2.nupkg.sha512",

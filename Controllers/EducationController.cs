@@ -32,8 +32,20 @@ namespace SignalIRServerTest.Controllers
         {
             var courses = _unitOfWork.CourseAttachmentRepository.Get(
                 includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)},{nameof(CourseAttachment.IdAttachmanentNavigation)}," +
-                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTeacherNavigation)}",
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTeacherNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdTaskStatusNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdCourseTaskNavigation)}",
                 filter: c => c.IdCourseNavigation.IdMainCourse == id);
+
+            return courses.ToList();
+        }
+
+        [Authorize]
+        [HttpGet("Courses.IdMainCourse={id:int}&IncludeProperties=false")]
+        public List<Course> GetCourseBySpecialityWithoutIncludings([FromRoute] int id)
+        {
+            var courses = _unitOfWork.CourseRepository
+                .Get(filter: c => c.IdMainCourse == id);
 
             return courses.ToList();
         }
@@ -46,6 +58,35 @@ namespace SignalIRServerTest.Controllers
                 filter: c => c.IdSpeciality == id);
 
             return courses.ToList();
+        }
+
+        [Authorize]
+        [HttpPut("Courses.ChangeMainCourseId")]
+        public async Task<bool> ChangeMainCourseId([FromBody] List<KeyValuePair<int, int>> Ids)
+        {
+            try
+            {
+                foreach (var (courseId, mainCourseId) in Ids)
+                {
+                    var course = _unitOfWork.CourseRepository
+                        .GetById(courseId);
+
+                    if (course == null)
+                    {
+                        return false;
+                    }
+
+                    course.IdMainCourse = mainCourseId;
+                }
+
+                _unitOfWork.Save();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeMainCourseId)));
+                return false;
+            }
         }
 
         [Authorize]
@@ -91,6 +132,7 @@ namespace SignalIRServerTest.Controllers
             try
             {
                 var foundCourse = _unitOfWork.CourseRepository.GetById(id);
+                var task = foundCourse.IdCourseTaskNavigation;
                 var foundCourseAttachments = _unitOfWork
                     .CourseAttachmentRepository.Get(c => c.IdCourse == id);
 
@@ -98,6 +140,10 @@ namespace SignalIRServerTest.Controllers
                     _unitOfWork.CourseAttachmentRepository.Delete(a));
 
                 _unitOfWork.CourseRepository.Delete(foundCourse);
+                if (task != null)
+                {
+                    _unitOfWork.CourseTaskRepository.Delete(task);
+                }
                 _unitOfWork.Save();
 
                 return true;
@@ -115,11 +161,13 @@ namespace SignalIRServerTest.Controllers
         {
             try
             {
-                var firstCourse = courses.FirstOrDefault()?.IdCourse;
+                var firstCourse = courses.FirstOrDefault()?.IdCourseNavigation;
+                var firstCourseId = firstCourse?.Id;
 
                 var foundDbCourse = _unitOfWork.CourseRepository.Get(
-                    includeProperties:$"{nameof(Course.CourseAttachments)}")
-                    .FirstOrDefault(c => c.Id == firstCourse);
+                    includeProperties:$"{nameof(Course.CourseAttachments)}," +
+                                      $"{nameof(Course.IdCourseTaskNavigation)}")
+                    .FirstOrDefault(c => c.Id == firstCourseId);
 
                 bool isAllCoursesWithoutAttachments = courses.All(c => c.IdAttachmanentNavigation == null);
 
@@ -140,6 +188,41 @@ namespace SignalIRServerTest.Controllers
                     _unitOfWork.Save();
                 });
 
+                foundDbCourse.Title = firstCourse?.Title;
+                foundDbCourse.Description = firstCourse?.Description;
+
+                if (firstCourse.IdCourseTaskNavigation == null)
+                {
+                    if (firstCourse.IdTask == 0 && firstCourse.IdCourseTaskNavigation != null)
+                    {
+                        _unitOfWork.CourseTaskRepository.Delete(foundDbCourse.IdCourseTaskNavigation);
+                    }
+                    else
+                    {
+                        foundDbCourse.IdTask = firstCourse.IdTask;
+                    }
+                }
+                else
+                {
+                    var task = _unitOfWork.CourseTaskRepository.GetById(firstCourse.IdCourseTaskNavigation.Id);
+                    if (task != null)
+                    {
+                        task.Description = firstCourse.IdCourseTaskNavigation.Description;
+                        task.EndTime = firstCourse.IdCourseTaskNavigation.EndTime;
+                        //return true;
+                    }
+                    else
+                    {
+                        foundDbCourse.IdCourseTaskNavigation = firstCourse.IdCourseTaskNavigation;
+                        //foundDbCourse.IdTask = firstCourse.IdTask;
+                    }
+
+                    
+                    //foundDbCourse.IdCourseTaskNavigation = firstCourse.IdCourseTaskNavigation;
+                }
+
+                _unitOfWork.CourseRepository.Update(foundDbCourse);
+
                 foreach (var courseAttachment in courses)
                 {
                     if (courseAttachment.Id == 0)
@@ -149,7 +232,7 @@ namespace SignalIRServerTest.Controllers
                         {
                             courseAttachment.IdAttachmanentNavigation = null;
                         }
-                        courseAttachment.IdCourseNavigation = null;
+                        courseAttachment.IdCourseNavigation = foundDbCourse;
                         _unitOfWork.CourseAttachmentRepository.Insert(courseAttachment);
                     }
                     else
@@ -162,8 +245,8 @@ namespace SignalIRServerTest.Controllers
                             dbCourseAttachment.IdAttachmanent = null;
                         }
 
-                        foundDbCourse.Title = courseAttachment.IdCourseNavigation.Title;
-                        foundDbCourse.Description = courseAttachment.IdCourseNavigation.Description;
+                        //foundDbCourse.Title = courseAttachment.IdCourseNavigation.Title;
+                        //foundDbCourse.Description = courseAttachment.IdCourseNavigation.Description;
                         dbCourseAttachment.IdAttachmanentNavigation = courseAttachment.IdAttachmanentNavigation;
                         dbCourseAttachment.IdAttachmanent = courseAttachment.IdAttachmanent;
                         _unitOfWork.CourseAttachmentRepository.Update(dbCourseAttachment);
@@ -178,6 +261,205 @@ namespace SignalIRServerTest.Controllers
                 _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeCourse)));
                 return false;
             }
+        }
+
+        [Authorize]
+        [HttpPost("Courses.AddSpeciality")]
+        public async Task<int> AddSpeciality([FromBody] Speciality item)
+        {
+            if (item == null)
+            {
+                return -1;
+            }
+
+            try
+            {
+                var entity = _unitOfWork.SpecialityRepository
+                    .Insert(item).Entity;
+
+                _unitOfWork.Save();
+
+                _unitOfWork.Save();
+                return entity.Id;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddSpeciality)));
+                return -1;
+            }
+        }
+
+        [Authorize]
+        [HttpPost("Courses.AddMainCourse")]
+        public async Task<int> AddMainCourse([FromBody] MainCourse item)
+        {
+            if (item == null)
+            {
+                return -1;
+            }
+
+            try
+            {
+                var entity = _unitOfWork.MainCourseRepository
+                    .Insert(item).Entity;
+
+                _unitOfWork.Save();
+                return entity.Id;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddMainCourse)));
+                return -1;
+            }
+        }
+
+        [Authorize]
+        [HttpPut("Courses.ChangeSpeciality")]
+        public async Task<bool> ChangeSpeciality([FromBody] Speciality speciality)
+        {
+            if (speciality == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var dbSpeciality = _unitOfWork.SpecialityRepository
+                    .GetById(speciality.Id);
+                if (dbSpeciality == null)
+                {
+                    return false; 
+                }
+
+                dbSpeciality.Code = speciality.Code;
+                dbSpeciality.Title = speciality.Title;
+
+                _unitOfWork.Save();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeSpeciality)));
+                return false;
+            }
+        }
+
+        [Authorize]
+        [HttpPut("Courses.ChangeMainCourse")]
+        public async Task<bool> ChangeMainCourse([FromBody] MainCourse course)
+        {
+            if (course == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var dbCourse = _unitOfWork.MainCourseRepository
+                    .GetById(course.Id);
+                if (dbCourse == null)
+                {
+                    return false; 
+                }
+
+                dbCourse.Title = course.Title;
+
+                _unitOfWork.Save();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeMainCourse)));
+                return false;
+            }
+        }
+
+        [Authorize]
+        [HttpDelete("Courses.IdMainCourse={id:int}")]
+        public async Task<bool> DeleteMainCourse([FromRoute] int id)
+        {
+            if (id == 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                var mainCourse = _unitOfWork.MainCourseRepository
+                    .GetById(id);
+                if (mainCourse == null)
+                {
+                    return false;
+                }
+
+                DeleteMainCourse(mainCourse);
+
+                _unitOfWork.Save();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(DeleteSpeciality)));
+                return false;
+            }
+        }
+
+        [Authorize]
+        [HttpDelete("Courses.SpecialityId={id:int}")]
+        public async Task<bool> DeleteSpeciality([FromRoute] int id)
+        {
+            if (id == 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                var speciality = _unitOfWork.SpecialityRepository
+                    .GetById(id);
+                if (speciality == null)
+                {
+                    return false;
+                }
+
+                var mainCourses = _unitOfWork.MainCourseRepository
+                    .Get(filter: c => c.IdSpeciality == id);
+
+                foreach (var mainCourse in mainCourses)
+                {
+                    DeleteMainCourse(mainCourse);
+                }
+
+                _unitOfWork.SpecialityRepository
+                    .Delete(speciality.Id);
+
+                _unitOfWork.Save();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(DeleteSpeciality)));
+                return false;
+            }
+        }
+
+        private bool DeleteMainCourse(MainCourse mainCourse)
+        {
+            var courses = _unitOfWork.CourseAttachmentRepository
+                .Get(includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)}",
+                    filter: c => c.IdCourseNavigation.IdMainCourse == mainCourse.Id);
+
+            foreach (var courseAttachment in courses)
+            {
+                _unitOfWork.CourseAttachmentRepository
+                    .Delete(courseAttachment.Id);
+            }
+
+            _unitOfWork.MainCourseRepository.Delete(mainCourse.Id);
+
+            return true;
         }
     }
 }
