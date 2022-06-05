@@ -148,7 +148,9 @@ namespace SignalIRServerTest.Models.Context
 
                 entity.HasIndex(e => e.IdCourse, "IX_CourseAttachment_IdCourse");
 
-                entity.HasIndex(e => e.IdCourse, "IX_CourseAttachment_IdStatus");
+                //entity.HasIndex(e => e.IdCourse, "IX_CourseAttachment_IdStatus");
+
+                entity.HasIndex(e => e.IdCourse, "IX_CourseAttachment_IdUser");
 
                 entity.HasOne(d => d.IdAttachmanentNavigation)
                     .WithMany(p => p.CourseAttachments)
@@ -160,10 +162,10 @@ namespace SignalIRServerTest.Models.Context
                     .HasForeignKey(d => d.IdCourse)
                     .HasConstraintName("FK_CourseAttachment_Course");
 
-                entity.HasOne(d => d.IdTaskStatusNavigation)
-                    .WithMany(p => p.CourseAttachment)
-                    .HasForeignKey(d => d.IdStatus)
-                    .HasConstraintName("FK_CourseAttachment_TaskStatus");
+                entity.HasOne(d => d.IdUserNavigation)
+                    .WithMany(p => p.CourseAttachments)
+                    .HasForeignKey(d => d.IdUser)
+                    .HasConstraintName("FK_CourseAttachment_User");
             });
 
             modelBuilder.Entity<Device>(entity =>

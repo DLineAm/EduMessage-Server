@@ -33,9 +33,21 @@ namespace SignalIRServerTest.Controllers
             var courses = _unitOfWork.CourseAttachmentRepository.Get(
                 includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)},{nameof(CourseAttachment.IdAttachmanentNavigation)}," +
                                    $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTeacherNavigation)}," +
-                                   $"{nameof(CourseAttachment.IdTaskStatusNavigation)}," +
                                    $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdCourseTaskNavigation)}",
-                filter: c => c.IdCourseNavigation.IdMainCourse == id);
+                filter: c => c.IdCourseNavigation.IdMainCourse == id && c.IdUser == null);
+
+            return courses.ToList();
+        }
+
+        [Authorize]
+        [HttpGet("Courses/Tasks.IdUser={id:int}&IdCourse={idCourse:int}")]
+        public List<CourseAttachment> GetCourseAttachments([FromRoute] int id, [FromRoute] int idCourse)
+        {
+            var courses = _unitOfWork.CourseAttachmentRepository.Get(
+                includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)},{nameof(CourseAttachment.IdAttachmanentNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTeacherNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdCourseTaskNavigation)}",
+                filter: c => c.IdCourse == idCourse && c.IdUser == id);
 
             return courses.ToList();
         }
@@ -58,6 +70,35 @@ namespace SignalIRServerTest.Controllers
                 filter: c => c.IdSpeciality == id);
 
             return courses.ToList();
+        }
+
+        [Authorize]
+        [HttpPut("Courses.ChangeSpecialityId")]
+        public async Task<bool> ChangeSpecialityId([FromBody] List<KeyValuePair<int, int>> Ids)
+        {
+            try
+            {
+                foreach (var (mainCourseId, specialityId) in Ids)
+                {
+                    var mainCourse = _unitOfWork.MainCourseRepository
+                        .GetById(mainCourseId);
+
+                    if (mainCourse == null)
+                    {
+                        continue;
+                    }
+
+                    mainCourse.IdSpeciality = specialityId;
+                }
+
+                _unitOfWork.Save();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeMainCourseId)));
+                return false;
+            }
         }
 
         [Authorize]
@@ -162,7 +203,7 @@ namespace SignalIRServerTest.Controllers
             try
             {
                 var firstCourse = courses.FirstOrDefault()?.IdCourseNavigation;
-                var firstCourseId = firstCourse?.Id;
+                var firstCourseId = firstCourse?.Id ?? courses.FirstOrDefault().IdCourse;
 
                 var foundDbCourse = _unitOfWork.CourseRepository.Get(
                     includeProperties:$"{nameof(Course.CourseAttachments)}," +
@@ -181,12 +222,24 @@ namespace SignalIRServerTest.Controllers
                 var onDeleteList = foundDbCourse.CourseAttachments
                     .Where(c => onChangeList.All(l => c.Id != l.Id));
 
+                if (firstCourse == null)
+                {
+                    onDeleteList = onDeleteList.Where(c => c.IdUser != null);
+                }
+
                 onDeleteList.ToList().ForEach(i =>
                 {
 
                     _unitOfWork.CourseAttachmentRepository.Delete(i);
                     _unitOfWork.Save();
                 });
+
+                if (firstCourse == null)
+                {
+                    AddOrUpdateCourseAttachments(courses, foundDbCourse, isAllCoursesWithoutAttachments);
+                    _unitOfWork.Save();
+                    return true;
+                }
 
                 foundDbCourse.Title = firstCourse?.Title;
                 foundDbCourse.Description = firstCourse?.Description;
@@ -223,35 +276,7 @@ namespace SignalIRServerTest.Controllers
 
                 _unitOfWork.CourseRepository.Update(foundDbCourse);
 
-                foreach (var courseAttachment in courses)
-                {
-                    if (courseAttachment.Id == 0)
-                    {
-                        if (courseAttachment.IdAttachmanent != 0 &&
-                            courseAttachment.IdAttachmanent != null)
-                        {
-                            courseAttachment.IdAttachmanentNavigation = null;
-                        }
-                        courseAttachment.IdCourseNavigation = foundDbCourse;
-                        _unitOfWork.CourseAttachmentRepository.Insert(courseAttachment);
-                    }
-                    else
-                    {
-                        var dbCourseAttachment =
-                            foundDbCourse.CourseAttachments.FirstOrDefault(c => c.Id == courseAttachment.Id);
-
-                        if (isAllCoursesWithoutAttachments)
-                        {
-                            dbCourseAttachment.IdAttachmanent = null;
-                        }
-
-                        //foundDbCourse.Title = courseAttachment.IdCourseNavigation.Title;
-                        //foundDbCourse.Description = courseAttachment.IdCourseNavigation.Description;
-                        dbCourseAttachment.IdAttachmanentNavigation = courseAttachment.IdAttachmanentNavigation;
-                        dbCourseAttachment.IdAttachmanent = courseAttachment.IdAttachmanent;
-                        _unitOfWork.CourseAttachmentRepository.Update(dbCourseAttachment);
-                    }
-                }
+                AddOrUpdateCourseAttachments(courses, foundDbCourse, isAllCoursesWithoutAttachments);
 
                 _unitOfWork.Save();
                 return true;
@@ -260,6 +285,40 @@ namespace SignalIRServerTest.Controllers
             {
                 _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeCourse)));
                 return false;
+            }
+        }
+
+        private void AddOrUpdateCourseAttachments(List<CourseAttachment> courses, Course foundDbCourse, bool isAllCoursesWithoutAttachments)
+        {
+            foreach (var courseAttachment in courses)
+            {
+                if (courseAttachment.Id == 0)
+                {
+                    if (courseAttachment.IdAttachmanent != 0 &&
+                        courseAttachment.IdAttachmanent != null)
+                    {
+                        courseAttachment.IdAttachmanentNavigation = null;
+                    }
+
+                    courseAttachment.IdCourseNavigation = foundDbCourse;
+                    _unitOfWork.CourseAttachmentRepository.Insert(courseAttachment);
+                }
+                else
+                {
+                    var dbCourseAttachment =
+                        foundDbCourse.CourseAttachments.FirstOrDefault(c => c.Id == courseAttachment.Id);
+
+                    if (isAllCoursesWithoutAttachments)
+                    {
+                        dbCourseAttachment.IdAttachmanent = null;
+                    }
+
+                    //foundDbCourse.Title = courseAttachment.IdCourseNavigation.Title;
+                    //foundDbCourse.Description = courseAttachment.IdCourseNavigation.Description;
+                    dbCourseAttachment.IdAttachmanentNavigation = courseAttachment.IdAttachmanentNavigation;
+                    dbCourseAttachment.IdAttachmanent = courseAttachment.IdAttachmanent;
+                    _unitOfWork.CourseAttachmentRepository.Update(dbCourseAttachment);
+                }
             }
         }
 

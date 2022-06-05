@@ -10,10 +10,11 @@ namespace SignalIRServerTest.Models
         public int Id { get; set; }
         public int? IdCourse { get; set; }
         public int? IdAttachmanent { get; set; }
-        public int? IdStatus { get; set; }
+        public byte? Mark { get; set; }
+        public int? IdUser { get; set; }
 
         public virtual Attachment IdAttachmanentNavigation { get; set; }
         public virtual Course IdCourseNavigation { get; set; }
-        public virtual TaskStatus IdTaskStatusNavigation { get; set; }
+        public virtual User IdUserNavigation { get; set; }
     }
 }

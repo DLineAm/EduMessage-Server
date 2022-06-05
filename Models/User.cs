@@ -14,6 +14,7 @@ namespace SignalIRServerTest.Models
             MessageIdRecipientNavigations = new HashSet<Message>();
             MessageIdUserNavigations = new HashSet<Message>();
             UserConversations = new HashSet<UserConversation>();
+            CourseAttachments = new HashSet<CourseAttachment>();
         }
 
         public int Id { get; set; }
@@ -49,6 +50,8 @@ namespace SignalIRServerTest.Models
         public virtual ICollection<UserConversation> UserConversations { get; set; }
         [JsonIgnore]
         public virtual ICollection<Course> Courses { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<CourseAttachment> CourseAttachments { get; set; }
 
     }
 }
