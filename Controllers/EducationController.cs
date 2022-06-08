@@ -53,6 +53,77 @@ namespace SignalIRServerTest.Controllers
         }
 
         [Authorize]
+        [HttpGet("Courses/Tasks.IdCourse={idCourse:int}")]
+        public List<CourseAttachment> GetCourseAttachmentsByCourseId([FromRoute] int idCourse)
+        {
+            var courses = _unitOfWork.CourseAttachmentRepository.Get(
+                includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)},{nameof(CourseAttachment.IdAttachmanentNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTeacherNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdCourseTaskNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdUserNavigation)}",
+                filter: c => c.IdCourse == idCourse && c.IdUser != null);
+
+            return courses.ToList();
+        }
+
+        [Authorize]
+        [HttpPut("Courses/Tasks.IdCourse={idCourse:int}&IdUser={idUser:int}&Mark={mark}")]
+        public async Task<bool> ChangeTaskMark(int idCourse, int idUser, int mark)
+        {
+            if (!byte.TryParse(mark.ToString(), out var markByte))
+            {
+                return false;
+            }
+            try
+            {
+                var courses = _unitOfWork.CourseAttachmentRepository
+                    .Get(filter: c => c.IdCourse == idCourse && c.IdUser == idUser);
+
+                foreach (var course in courses)
+                {
+                    course.SendTime = DateTime.Now;
+                    //course.Comment = comment;
+                    course.Mark = markByte;
+                }
+
+                _unitOfWork.Save();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+        [Authorize]
+        [HttpPut("Courses/Tasks.IdCourse={idCourse:int}&IdUser={idUser:int}")]
+        public async Task<bool> ChangeTaskComment(int idCourse, int idUser, [FromBody] string comment)
+        {
+            try
+            {
+                var courses = _unitOfWork.CourseAttachmentRepository
+                    .Get(filter: c => c.IdCourse == idCourse && c.IdUser == idUser);
+
+                foreach (var course in courses)
+                {
+                    course.Comment = comment;
+                    //course.SendTime = DateTime.Now;
+                    //course.Comment = comment;
+                    //course.Mark = markByte;
+                }
+
+                _unitOfWork.Save();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+        [Authorize]
         [HttpGet("Courses.IdMainCourse={id:int}&IncludeProperties=false")]
         public List<Course> GetCourseBySpecialityWithoutIncludings([FromRoute] int id)
         {

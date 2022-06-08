@@ -30,11 +30,50 @@ namespace SignalIRServerTest
             var id =  identity.Claims.First().Value;
 
             var list = _unitOfWork.UserRepository.Get(
-                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}").ToList();
+                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}," +
+                                   $"{nameof(Models.User.IdRoleNavigation)}",
+                filter: u => u.Approved).ToList();
             var user = list.FirstOrDefault(u => u.Id.ToString() == id);
             list.Remove(user);
             return list.ToList();
         }
+
+        [HttpGet("NotApproved")]
+        [Authorize]
+        public async Task<List<User>> GetNotApprovedUsers()
+        {
+            if (!(HttpContext.User.Identity is ClaimsIdentity identity))
+            {
+                return null;
+            }
+
+            var id =  identity.Claims.First().Value;
+
+            var list = _unitOfWork.UserRepository.Get(
+                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}",
+                filter: u => !u.Approved).ToList();
+            //var user = list.FirstOrDefault(u => u.Id.ToString() == id);
+            //list.Remove(user);
+            return list.ToList();
+        }
+
+        [Authorize]
+        [HttpPut("Id={id:int}&ApprovedStatus={approved:bool}")]
+        public async Task<bool> ChangeUserApprovedStatus([FromRoute] int id, [FromRoute] bool approved)
+        {
+            var user = _unitOfWork.UserRepository
+                .GetById(id);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.Approved = approved;
+            _unitOfWork.Save();
+            return true;
+        }
+
 
         [HttpGet("All.schoolId={schoolId}.roleId={roleId}.fullName={fullName}")]
         [Authorize]
@@ -48,7 +87,8 @@ namespace SignalIRServerTest
             var id =  identity.Claims.First().Value;
 
             var list = _unitOfWork.UserRepository.Get(
-                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}")
+                includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdSchoolNavigation)}," +
+                                   $"{nameof(Models.User.IdRoleNavigation)}")
                 .ToList();
             if (roleId != -1)
             {

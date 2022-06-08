@@ -34,6 +34,7 @@ namespace SignalIRServerTest.Models
         public int IdRole { get; set; }
         public byte[] Image { get; set; }
         public bool Deleted { get; set; }
+        public bool Approved { get; set; }
 
         public virtual City IdCityNavigation { get; set; }
         public virtual EducationForm IdEducationFormNavigation { get; set; }

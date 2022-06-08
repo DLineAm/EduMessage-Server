@@ -38,11 +38,13 @@ namespace EduMessage.Services
             message.Body = htmlContent;
             message.IsBodyHtml = true;
 
-            var client = new SmtpClient("smtp.gmail.com", 587);
-            client.DeliveryMethod = SmtpDeliveryMethod.Network;
-            client.UseDefaultCredentials = false;
-            client.Credentials = new NetworkCredential("pochta23114@gmail.com", "pHPgeo1-D");
-            client.EnableSsl = true;
+            var client = new SmtpClient("smtp.gmail.com", 587)
+            {
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential("pochta23114@gmail.com", "rxextcagawccnqio"),
+                EnableSsl = true
+            };
             client.Send(message);
         }
     }

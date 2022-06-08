@@ -59,7 +59,7 @@ namespace SignalIRServerTest.Controllers
             }
             catch (System.Exception e)
             {
-                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(GetUserForLogin)));
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(SendEmailCode)));
                 return false;
             }
         }
@@ -107,6 +107,11 @@ namespace SignalIRServerTest.Controllers
                 if (!hashedPassword)
                 {
                     return new KeyValuePair<User, string>(null, null);
+                }
+
+                if (!userFromLogin.Approved)
+                {
+                    return new KeyValuePair<User, string>(userFromLogin, null);
                 }
 
                 var jwt = CreateJwtToken(userFromLogin);
@@ -195,7 +200,7 @@ namespace SignalIRServerTest.Controllers
         [HttpGet("Roles")]
         public async Task<List<Role>> GetRoles()
         {
-            var list = _unitOfWork.RoleRepository.Get();
+            var list = _unitOfWork.RoleRepository.Get(filter: role => role.Id != 3);
             return list.ToList();
         }
 

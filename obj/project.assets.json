@@ -7854,11 +7854,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\pocht\\Desktop\\EduMessage-Server\\SignalIRServerTest.csproj",
+      "projectUniqueName": "G:\\Диплом\\EduMessage-Server\\SignalIRServerTest.csproj",
       "projectName": "SignalIRServerTest",
-      "projectPath": "C:\\Users\\pocht\\Desktop\\EduMessage-Server\\SignalIRServerTest.csproj",
+      "projectPath": "G:\\Диплом\\EduMessage-Server\\SignalIRServerTest.csproj",
       "packagesPath": "C:\\Users\\pocht\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\pocht\\Desktop\\EduMessage-Server\\obj\\",
+      "outputPath": "G:\\Диплом\\EduMessage-Server\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\DevExpress 21.2\\Components\\Offline Packages",

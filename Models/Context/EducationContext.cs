@@ -144,6 +144,8 @@ namespace SignalIRServerTest.Models.Context
             {
                 entity.ToTable("CourseAttachment");
 
+                entity.Property(p => p.Mark).HasColumnType("smallint");
+
                 entity.HasIndex(e => e.IdAttachmanent, "IX_CourseAttachment_IdAttachmanent");
 
                 entity.HasIndex(e => e.IdCourse, "IX_CourseAttachment_IdCourse");
