@@ -19,6 +19,7 @@ namespace SignalIRServerTest.Models
         public int? IdMainCourse { get; set; }
         public int? IdTeacher { get; set; }
         public int? IdTask { get; set; }
+        public int? Position{ get; set; }
 
         public virtual CourseTask IdCourseTaskNavigation { get; set; }
         public virtual MainCourse IdMainCourseNavigation { get; set; }

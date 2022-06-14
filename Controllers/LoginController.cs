@@ -38,7 +38,6 @@ namespace SignalIRServerTest.Controllers
             _unitOfWork = unitOfWork;
             _hash = hash;
             _logger = logger;
-
         }
 
         //[HttpGet("Testt")]
@@ -318,6 +317,7 @@ namespace SignalIRServerTest.Controllers
                 expires: now.Add(TimeSpan.FromDays(Authentification.Lifetime)),
                 signingCredentials: new Microsoft.IdentityModel.Tokens.SigningCredentials(Authentification.GetSecurityKey(), SecurityAlgorithms.HmacSha256));
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
+
             return encodedJwt;
         }
 

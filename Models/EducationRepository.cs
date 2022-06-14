@@ -72,6 +72,11 @@ namespace SignalIRServerTest.Models
             return DbSet.FirstOrDefault(expression);
         }
 
+        public virtual TEntity GetLastByExpression(Expression<Func<TEntity, bool>> expression)
+        {
+            return DbSet.LastOrDefault(expression);
+        }
+
         public virtual EntityEntry<TEntity> Insert(TEntity entity)
         {
             return DbSet.Add(entity);

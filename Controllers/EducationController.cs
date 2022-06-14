@@ -232,6 +232,7 @@ namespace SignalIRServerTest.Controllers
             {
                 Course addedCourse = null;
                 var courseId = -1;
+                var position =  _unitOfWork.CourseRepository.Get().Max(c => c.Position);
                 foreach (var course in courses)
                 {
                     if (addedCourse != null)
@@ -240,6 +241,7 @@ namespace SignalIRServerTest.Controllers
                     }
 
                     course.IdCourseNavigation.IdMainCourseNavigation = null;
+                    course.IdCourseNavigation.Position = position + 1;
 
                     var entry = _unitOfWork.CourseAttachmentRepository.Insert(course);
                     _unitOfWork.Save();
@@ -289,14 +291,69 @@ namespace SignalIRServerTest.Controllers
             }
         }
 
-        //[Authorize]
-        //[HttpGet("CourseTasks.MainCourseId={idMainCourse:int}")]
-        //public async Task<List<CourseAttachment>> GetCourseTasksByMainCourseId([FromRoute] int idMainCourse)
-        //{
-        //    var courses = _unitOfWork.CourseRepository
-        //        .Get(filter: c => c.IdMainCourse == idMainCourse);
-        //    var tasks = courses.Select(c => c.IdCourseTaskNavigation)
-        //}
+        /// <summary>
+        /// Изменяет позицию курса
+        /// </summary>
+        /// <param name="courseId"></param>
+        /// <param name="isAscending"></param>
+        /// <returns>KeyValuePair() - пары значений. Первый int - позиция измененного требуемого курса, второй - id близжайшего курса с измененной позицией, третий - измененная позиция близжайшего курса</returns>
+        [Authorize]
+        [HttpPut("Courses/ChangePosition.CourseId={courseId:int}&IsAscending={isAscending:bool}")]
+        public async Task<KeyValuePair<int, KeyValuePair<int, int>>> ChangeCoursePosition([FromRoute] int courseId, [FromRoute] bool isAscending)
+        {
+            try
+            {
+                var course = _unitOfWork.CourseRepository
+                    .GetById(courseId);
+
+                if (course?.Position == null)
+                {
+                    return new KeyValuePair<int, KeyValuePair<int, int>>();
+                }
+
+                var courseWithNeededPosition = GetNearestCourseWithPosition((int)course.IdMainCourse, (int)course.Position, isAscending);
+
+                if (courseWithNeededPosition == null)
+                {
+                    return new KeyValuePair<int, KeyValuePair<int, int>>();
+                }
+
+                (courseWithNeededPosition.Position, course.Position) = (course.Position, courseWithNeededPosition.Position);
+
+                _unitOfWork.Save();
+
+                var result = new KeyValuePair<int, KeyValuePair<int, int>>((int)course.Position,
+                    new KeyValuePair<int, int>(courseWithNeededPosition.Id, (int)courseWithNeededPosition.Position));
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeCoursePosition)));
+                return new KeyValuePair<int, KeyValuePair<int, int>>();
+            }
+        }
+
+        private Course GetNearestCourseWithPosition(int mainCourseId, int position, bool isAscending)
+        {
+            Course courseWithNeededPosition;
+
+            if (isAscending)
+            {
+                courseWithNeededPosition = _unitOfWork.CourseRepository
+                    .GetByExpression(c => c.Position > position && c.IdMainCourse == mainCourseId);
+            }
+            else
+            {
+                var courses = _unitOfWork.CourseRepository
+                    .Get(filter: c => c.IdMainCourse == mainCourseId && c.Position != null)
+                    .OrderBy(c => c.Position);
+                courseWithNeededPosition = courses
+                    .LastOrDefault(c => c.Position < position);
+            }
+
+            return courseWithNeededPosition;
+        }
 
         [Authorize]
         [HttpPut("Courses")]
@@ -322,7 +379,7 @@ namespace SignalIRServerTest.Controllers
                 var onChangeList = courses.Where(c => c.Id != 0).ToList();
 
                 var onDeleteList = foundDbCourse.CourseAttachments
-                    .Where(c => onChangeList.All(l => c.Id != l.Id));
+                    .Where(c => onChangeList.All(l => c.Id != l.Id) && c.IdUser == null);
 
                 if (firstCourse == null)
                 {
