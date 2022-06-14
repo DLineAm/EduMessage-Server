@@ -27,16 +27,38 @@ namespace SignalIRServerTest.Controllers
         }
 
         [Authorize]
-        [HttpGet("Courses.IdMainCourse={id:int}")]
-        public List<CourseAttachment> GetCourseBySpeciality([FromRoute] int id)
+        [HttpGet("Courses.IdMainCourse={id:int}&WithoutUsers={withoutUsers:bool}")]
+        public List<CourseAttachment> GetCourseBySpeciality([FromRoute] int id,[FromRoute] bool withoutUsers)
         {
             var courses = _unitOfWork.CourseAttachmentRepository.Get(
                 includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)},{nameof(CourseAttachment.IdAttachmanentNavigation)}," +
                                    $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTeacherNavigation)}," +
-                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdCourseTaskNavigation)}",
-                filter: c => c.IdCourseNavigation.IdMainCourse == id && c.IdUser == null);
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdCourseTaskNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdUserNavigation)}",
+                filter: c => c.IdCourseNavigation.IdMainCourse == id && (withoutUsers ? c.IdUser == null : c.IdUser != null));
 
             return courses.ToList();
+        }
+
+        [Authorize]
+        [HttpPost("Tasks/Add")]
+        public bool AddTask([FromBody] List<CourseAttachment> attachments)
+        {
+            try
+            {
+                foreach (var item in attachments)
+                {
+                    _unitOfWork.CourseAttachmentRepository.Insert(item);
+                }
+
+                _unitOfWork.Save();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddTask)));
+                return false;
+            }
         }
 
         [Authorize]
@@ -266,6 +288,15 @@ namespace SignalIRServerTest.Controllers
                 return false;
             }
         }
+
+        //[Authorize]
+        //[HttpGet("CourseTasks.MainCourseId={idMainCourse:int}")]
+        //public async Task<List<CourseAttachment>> GetCourseTasksByMainCourseId([FromRoute] int idMainCourse)
+        //{
+        //    var courses = _unitOfWork.CourseRepository
+        //        .Get(filter: c => c.IdMainCourse == idMainCourse);
+        //    var tasks = courses.Select(c => c.IdCourseTaskNavigation)
+        //}
 
         [Authorize]
         [HttpPut("Courses")]

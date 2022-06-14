@@ -448,3 +448,4 @@ C:\Users\pocht\Desktop\EduMessage-Server\bin\Debug\netcoreapp3.1\Castle.Windsor.
 C:\Users\pocht\Desktop\EduMessage-Server\bin\Debug\netcoreapp3.1\Microsoft.Extensions.DependencyModel.dll
 C:\Users\pocht\Desktop\EduMessage-Server\bin\Debug\netcoreapp3.1\Scrutor.dll
 C:\Users\pocht\Desktop\EduMessage-Server\bin\Debug\netcoreapp3.1\System.Text.Json.dll
+G:\Диплом\EduMessage-Server\bin\Debug\netcoreapp3.1\SignalIRServerTest.StaticWebAssets.xml
