@@ -8,7 +8,9 @@ using SignalIRServerTest.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using WebApplication1;
 
 namespace SignalIRServerTest.Controllers
 {
@@ -34,8 +36,10 @@ namespace SignalIRServerTest.Controllers
                 includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)},{nameof(CourseAttachment.IdAttachmanentNavigation)}," +
                                    $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTeacherNavigation)}," +
                                    $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdCourseTaskNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTestFrameNavigation)}.{nameof(TestFrame.TestPages)}.{nameof(TestPage.TestVariants)}," +
                                    $"{nameof(CourseAttachment.IdUserNavigation)}",
                 filter: c => c.IdCourseNavigation.IdMainCourse == id && (withoutUsers ? c.IdUser == null : c.IdUser != null));
+
 
             return courses.ToList();
         }
@@ -46,7 +50,9 @@ namespace SignalIRServerTest.Controllers
         {
             try
             {
-                foreach (var item in attachments)
+                DeleteUnusedCourseAttachment(attachments, true);
+
+                foreach (var item in attachments.Where(a => a.Id == 0))
                 {
                     _unitOfWork.CourseAttachmentRepository.Insert(item);
                 }
@@ -240,6 +246,16 @@ namespace SignalIRServerTest.Controllers
                         course.IdCourseNavigation = addedCourse;
                     }
 
+                    var pages = course.IdCourseNavigation.IdTestFrameNavigation?.TestPages;
+
+                    if (pages != null)
+                    {
+                        foreach (var testPage in pages)
+                        {
+                            testPage.IdTestTypeNavigation = null;
+                        }
+                    }
+
                     course.IdCourseNavigation.IdMainCourseNavigation = null;
                     course.IdCourseNavigation.Position = position + 1;
 
@@ -274,6 +290,17 @@ namespace SignalIRServerTest.Controllers
 
                 foundCourseAttachments.ToList().ForEach(a => 
                     _unitOfWork.CourseAttachmentRepository.Delete(a));
+
+                if (foundCourse.IdTestFrame is int idTestFrame)
+                {
+                    var testFrame = _unitOfWork.TestFrameRepository
+                        .GetById(idTestFrame);
+
+                    _unitOfWork.TestFrameRepository
+                        .Delete(testFrame);
+
+                    _unitOfWork.Save();
+                }
 
                 _unitOfWork.CourseRepository.Delete(foundCourse);
                 if (task != null)
@@ -311,25 +338,29 @@ namespace SignalIRServerTest.Controllers
                     return new KeyValuePair<int, KeyValuePair<int, int>>();
                 }
 
-                var courseWithNeededPosition = GetNearestCourseWithPosition((int)course.IdMainCourse, (int)course.Position, isAscending);
+                var courseWithNeededPosition = GetNearestCourseWithPosition(
+                    (int)course.IdMainCourse, (int)course.Position, isAscending);
 
                 if (courseWithNeededPosition == null)
                 {
                     return new KeyValuePair<int, KeyValuePair<int, int>>();
                 }
 
-                (courseWithNeededPosition.Position, course.Position) = (course.Position, courseWithNeededPosition.Position);
+                (courseWithNeededPosition.Position, course.Position) = 
+                    (course.Position, courseWithNeededPosition.Position);
 
                 _unitOfWork.Save();
 
                 var result = new KeyValuePair<int, KeyValuePair<int, int>>((int)course.Position,
-                    new KeyValuePair<int, int>(courseWithNeededPosition.Id, (int)courseWithNeededPosition.Position));
+                    new KeyValuePair<int, int>(
+                        courseWithNeededPosition.Id, (int)courseWithNeededPosition.Position));
 
                 return result;
             }
             catch (Exception e)
             {
-                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeCoursePosition)));
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(ChangeCoursePosition)));
                 return new KeyValuePair<int, KeyValuePair<int, int>>();
             }
         }
@@ -355,6 +386,37 @@ namespace SignalIRServerTest.Controllers
             return courseWithNeededPosition;
         }
 
+        private void DeleteUnusedCourseAttachment(List<CourseAttachment> courseAttachments, bool searchWithUser)
+        {
+            var firstCourseId = courseAttachments.FirstOrDefault()
+                .IdCourse;
+            var foundDbCourse = _unitOfWork.CourseRepository
+                .Get(includeProperties: $"{nameof(Course.CourseAttachments)}",
+                    filter: c => c.Id == firstCourseId)
+                .FirstOrDefault();
+            var onChangeList = courseAttachments.Where(c => c.Id != 0).ToList();
+
+            if (!(HttpContext.User.Identity is ClaimsIdentity identity))
+            {
+                return;
+            }
+
+            var claims = identity.Claims;
+
+            var id = claims.First().Value;
+
+            var onDeleteList = foundDbCourse.CourseAttachments
+                .Where(c => onChangeList.All(l => c.Id != l.Id) && (searchWithUser ? c.IdUser.ToString() == id : c.IdUser == null));
+
+            onDeleteList.ToList()
+                .ForEach(i =>
+                {
+                    _unitOfWork.CourseAttachmentRepository
+                        .Delete(i);
+                    _unitOfWork.Save();
+                });
+        }
+
         [Authorize]
         [HttpPut("Courses")]
         public async Task<bool> ChangeCourse([FromBody] List<CourseAttachment> courses)
@@ -369,29 +431,15 @@ namespace SignalIRServerTest.Controllers
                                       $"{nameof(Course.IdCourseTaskNavigation)}")
                     .FirstOrDefault(c => c.Id == firstCourseId);
 
-                bool isAllCoursesWithoutAttachments = courses.All(c => c.IdAttachmanentNavigation == null);
+                bool isAllCoursesWithoutAttachments = courses
+                    .All(c => c.IdAttachmanentNavigation == null);
 
                 if (foundDbCourse == null)
                 {
                     return false;
                 }
 
-                var onChangeList = courses.Where(c => c.Id != 0).ToList();
-
-                var onDeleteList = foundDbCourse.CourseAttachments
-                    .Where(c => onChangeList.All(l => c.Id != l.Id) && c.IdUser == null);
-
-                if (firstCourse == null)
-                {
-                    onDeleteList = onDeleteList.Where(c => c.IdUser != null);
-                }
-
-                onDeleteList.ToList().ForEach(i =>
-                {
-
-                    _unitOfWork.CourseAttachmentRepository.Delete(i);
-                    _unitOfWork.Save();
-                });
+                DeleteUnusedCourseAttachment(courses, firstCourse == null);
 
                 if (firstCourse == null)
                 {
@@ -407,7 +455,8 @@ namespace SignalIRServerTest.Controllers
                 {
                     if (firstCourse.IdTask == 0 && firstCourse.IdCourseTaskNavigation != null)
                     {
-                        _unitOfWork.CourseTaskRepository.Delete(foundDbCourse.IdCourseTaskNavigation);
+                        _unitOfWork.CourseTaskRepository
+                            .Delete(foundDbCourse.IdCourseTaskNavigation);
                     }
                     else
                     {
@@ -416,7 +465,8 @@ namespace SignalIRServerTest.Controllers
                 }
                 else
                 {
-                    var task = _unitOfWork.CourseTaskRepository.GetById(firstCourse.IdCourseTaskNavigation.Id);
+                    var task = _unitOfWork.CourseTaskRepository
+                        .GetById(firstCourse.IdCourseTaskNavigation.Id);
                     if (task != null)
                     {
                         task.Description = firstCourse.IdCourseTaskNavigation.Description;
@@ -442,7 +492,8 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeCourse)));
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(ChangeCourse)));
                 return false;
             }
         }
@@ -465,7 +516,8 @@ namespace SignalIRServerTest.Controllers
                 else
                 {
                     var dbCourseAttachment =
-                        foundDbCourse.CourseAttachments.FirstOrDefault(c => c.Id == courseAttachment.Id);
+                        foundDbCourse.CourseAttachments
+                            .FirstOrDefault(c => c.Id == courseAttachment.Id);
 
                     if (isAllCoursesWithoutAttachments)
                     {
@@ -502,7 +554,8 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddSpeciality)));
+                _logger.LogError(StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(AddSpeciality)));
                 return -1;
             }
         }
@@ -526,7 +579,8 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddMainCourse)));
+                _logger.LogError(StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(AddMainCourse)));
                 return -1;
             }
         }
@@ -557,7 +611,8 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeSpeciality)));
+                _logger.LogError(StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(ChangeSpeciality)));
                 return false;
             }
         }
@@ -587,7 +642,8 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(ChangeMainCourse)));
+                _logger.LogError(StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(ChangeMainCourse)));
                 return false;
             }
         }
@@ -618,7 +674,99 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(DeleteSpeciality)));
+                _logger.LogError(StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(DeleteSpeciality)));
+                return false;
+            }
+        }
+
+        [Authorize]
+        [HttpGet("Tests/Types")]
+        public async Task<IEnumerable<TestType>> GetTestTypes()
+        {
+            return _unitOfWork.TestTypeRepository
+                .Get();
+        }
+
+        [Authorize]
+        [HttpPut("Tests")]
+        public async Task<bool> ChangeTest([FromBody] TestFrame testFrame)
+        {
+            try
+            {
+                var dbTestFrame = _unitOfWork.TestFrameRepository
+                    .Get(filter: t=> t.Id == testFrame.Id,
+                        includeProperties: $"{nameof(TestFrame.TestPages)}")
+                    .FirstOrDefault();
+
+                if (dbTestFrame == null)
+                {
+                    return false;
+                }
+
+                dbTestFrame.EndDate = testFrame.EndDate;
+
+                foreach (var testPage in dbTestFrame.TestPages)
+                {
+                    _unitOfWork.TestPageRepository
+                        .Delete(testPage);
+                }
+
+                _unitOfWork.Save();
+
+                foreach (var testPage in testFrame.TestPages)
+                {
+                    testPage.Id = 0;
+                    testPage.IdTestTypeNavigation = null;
+                    foreach (var testVariant in testPage.TestVariants)
+                    {
+                        testVariant.Id = 0;
+                        testVariant.IdTestPage = null;
+                    }
+                    _unitOfWork.TestPageRepository
+                        .Insert(testPage);
+                }
+                _unitOfWork.Save();
+
+
+                dbTestFrame.TestPages = testFrame.TestPages;
+                _unitOfWork.Save();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(ChangeTest)));
+                return false;
+            }
+        }
+
+        [Authorize]
+        [HttpDelete("Tests.Id={id:int}")]
+        public async Task<bool> DeleteTest([FromRoute] int id)
+        {
+            try
+            {
+                var testFrame = _unitOfWork.TestFrameRepository
+                    .GetById(id);
+
+                if (testFrame == null)
+                {
+                    return false;
+                }
+
+                _unitOfWork.TestFrameRepository
+                    .Delete(testFrame);
+
+                _unitOfWork.Save();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(ChangeTest)));
                 return false;
             }
         }
@@ -658,7 +806,8 @@ namespace SignalIRServerTest.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(StringDecorator.GetDecoratedLogString(e.GetType(), nameof(DeleteSpeciality)));
+                _logger.LogError(StringDecorator.GetDecoratedLogString(
+                    e.GetType(), nameof(DeleteSpeciality)));
                 return false;
             }
         }

@@ -31,20 +31,12 @@ namespace SignalIRServerTest.Controllers
 
         private readonly ILogger<LoginController> _logger;
 
-        //private static EducationContext db = new EducationContext();
-
         public LoginController(UnitOfWork unitOfWork, Hash hash, ILogger<LoginController> logger)
         {
             _unitOfWork = unitOfWork;
             _hash = hash;
             _logger = logger;
         }
-
-        //[HttpGet("Testt")]
-        //public bool GetTest(Aboba aboba)
-        //{
-        //    return aboba.GetResult();
-        //}
 
         [HttpGet("Send.email={email}")]
         public bool SendEmailCode([FromRoute] string email)
@@ -121,21 +113,6 @@ namespace SignalIRServerTest.Controllers
                 _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(GetUserForLogin)));
                 return new KeyValuePair<User, string>(null, null);
             }
-
-            //try
-            //{
-            //    User findedUser = list.FirstOrDefault(p => p.Login == loginemail || p.Email == loginemail && p.Password == password);
-            //    if (findedUser == null)
-            //    {
-            //        return new KeyValuePair<User, string>(null, null);
-            //    }
-            //    var jwt = CreateJwtToken(findedUser);
-            //    return new KeyValuePair<User, string>(findedUser, jwt);
-            //}
-            //catch (System.Exception e)
-            //{
-            //    return new KeyValuePair<User, string>(null, null);
-            //}
         }
 
         [HttpPost("Schools")]
@@ -278,19 +255,6 @@ namespace SignalIRServerTest.Controllers
             }
 
             var claims = identity.Claims;
-
-            //var users = _unitOfWork.UserRepository
-            //    .Get(filter: u => u.PasswordHash == null);
-
-            //foreach (var user1 in users)
-            //{
-            //    var hashedPassword = _hash.GetHashedString(user1.Password, out var salt);
-            //    user1.PasswordHash = hashedPassword;
-            //    user1.Salt = salt;
-            //    _unitOfWork.UserRepository.Update(user1);
-            //}
-
-            //_unitOfWork.Save();
 
             var user = _unitOfWork.UserRepository.Get(
                 includeProperties: $"{nameof(SignalIRServerTest.Models.User.IdRoleNavigation)}," +

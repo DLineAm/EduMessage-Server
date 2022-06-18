@@ -1,5 +1,6 @@
 ﻿using System;
 using SignalIRServerTest.Models.Context;
+using WebApplication1;
 
 namespace SignalIRServerTest.Models
 {
@@ -27,6 +28,10 @@ namespace SignalIRServerTest.Models
         private EducationRepository<Device> _deviceRepository;
         private EducationRepository<MainCourse> _mainCourseRepository;
         private EducationRepository<CourseTask> _courseTaskRepository;
+        private EducationRepository<TestType> _testTypeRepository;
+        private EducationRepository<TestFrame> _testFrameRepository;
+        private EducationRepository<TestPage> _testPageRepository;
+        private EducationRepository<TestVariant> _testVariantRepository;
 
 
         public EducationRepository<CourseAttachment> CourseAttachmentRepository => _courseAttachmentRepository 
@@ -79,6 +84,18 @@ namespace SignalIRServerTest.Models
 
         public EducationRepository<CourseTask> CourseTaskRepository => _courseTaskRepository
         ??= new EducationRepository<CourseTask>(_context);
+
+        public EducationRepository<TestType> TestTypeRepository => _testTypeRepository
+        ??= new EducationRepository<TestType>(_context);
+
+        public EducationRepository<TestFrame> TestFrameRepository => _testFrameRepository
+        ??= new EducationRepository<TestFrame>(_context);
+
+        public EducationRepository<TestPage> TestPageRepository => _testPageRepository
+        ??= new EducationRepository<TestPage>(_context);
+
+        public EducationRepository<TestVariant> TestVariantRepository => _testVariantRepository
+        ??= new EducationRepository<TestVariant>(_context);
 
         public void Save()
         {

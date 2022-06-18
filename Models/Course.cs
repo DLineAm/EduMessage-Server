@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
+using WebApplication1;
+
 #nullable disable
 
 namespace SignalIRServerTest.Models
@@ -20,10 +22,12 @@ namespace SignalIRServerTest.Models
         public int? IdTeacher { get; set; }
         public int? IdTask { get; set; }
         public int? Position{ get; set; }
+        public int? IdTestFrame { get; set; }
 
         public virtual CourseTask IdCourseTaskNavigation { get; set; }
         public virtual MainCourse IdMainCourseNavigation { get; set; }
         public virtual User IdTeacherNavigation { get; set; }
+        public virtual TestFrame IdTestFrameNavigation { get; set; }
         [JsonIgnore]
         public virtual ICollection<CourseAttachment> CourseAttachments { get; set; }
     }

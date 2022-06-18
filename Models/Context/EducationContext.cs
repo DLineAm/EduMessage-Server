@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using SignalIRServerTest.Models;
 
+using WebApplication1;
+
 #nullable disable
 
 namespace SignalIRServerTest.Models.Context
@@ -122,6 +124,11 @@ namespace SignalIRServerTest.Models.Context
                     .WithMany(p => p.Course)
                     .HasForeignKey(d => d.IdTask)
                     .HasConstraintName("FK_Course_CourseTask");
+
+                entity.HasOne(d => d.IdTestFrameNavigation)
+                    .WithMany(p => p.Courses)
+                    .HasForeignKey(d => d.IdTestFrame)
+                    .HasConstraintName("FK_Course_TestFrame");
             });
 
             modelBuilder.Entity<CourseTask>(entity =>
@@ -333,6 +340,36 @@ namespace SignalIRServerTest.Models.Context
                 entity.Property(e => e.Title).IsRequired();
             });
 
+            modelBuilder.Entity<TestFrame>(entity =>
+            {
+                entity.ToTable("TestFrame");
+            });
+
+            modelBuilder.Entity<TestPage>(entity =>
+            {
+                entity.ToTable("TestPage");
+
+                entity.HasOne(d => d.IdTestFrameNavigation)
+                    .WithMany(p => p.TestPages)
+                    .HasForeignKey(d => d.IdTestFrame)
+                    .HasConstraintName("FK_TestPage_TestFrame");
+
+                entity.HasOne(d => d.IdTestTypeNavigation)
+                    .WithMany(p => p.TestPage)
+                    .HasForeignKey(d => d.IdTestType)
+                    .HasConstraintName("FK_TestPage_TestType");
+            });
+
+            modelBuilder.Entity<TestVariant>(entity =>
+            {
+                entity.ToTable("TestVariant");
+
+                entity.HasOne(d => d.IdTestPageNavigation)
+                    .WithMany(p => p.TestVariants)
+                    .HasForeignKey(d => d.IdTestPage)
+                    .HasConstraintName("FK_TestVariant_TestPage");
+            });
+
             modelBuilder.Entity<User>(entity =>
             {
                 entity.ToTable("User");
@@ -366,10 +403,6 @@ namespace SignalIRServerTest.Models.Context
                     .HasMaxLength(20);
 
                 entity.Property(e => e.MiddleName).HasMaxLength(50);
-
-                //entity.Property(e => e.Password)
-                //    .IsRequired()
-                //    .HasMaxLength(16);
 
                 entity.HasOne(d => d.IdCityNavigation)
                     .WithMany(p => p.Users)
