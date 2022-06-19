@@ -38,10 +38,42 @@ namespace SignalIRServerTest.Controllers
                                    $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdCourseTaskNavigation)}," +
                                    $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTestFrameNavigation)}.{nameof(TestFrame.TestPages)}.{nameof(TestPage.TestVariants)}," +
                                    $"{nameof(CourseAttachment.IdUserNavigation)}",
-                filter: c => c.IdCourseNavigation.IdMainCourse == id && (withoutUsers ? c.IdUser == null : c.IdUser != null));
+                filter: c => c.IdCourseNavigation.IdMainCourse == id && (withoutUsers ? c.IdUser == null && c.IsTask == null : c.IdUser != null && c.IsTask == true));
 
 
             return courses.ToList();
+        }
+
+        [Authorize]
+        [HttpGet("Courses.IdMainCourse={id:int}")]
+        public List<CourseAttachment> GetAllCourseAttachments([FromRoute] int id)
+        {
+            var courses = _unitOfWork.CourseAttachmentRepository.Get(
+                includeProperties: $"{nameof(CourseAttachment.IdCourseNavigation)},{nameof(CourseAttachment.IdAttachmanentNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTeacherNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdCourseTaskNavigation)}," +
+                                   $"{nameof(CourseAttachment.IdCourseNavigation)}.{nameof(Course.IdTestFrameNavigation)}.{nameof(TestFrame.TestPages)}.{nameof(TestPage.TestVariants)}," +
+                                   $"{nameof(CourseAttachment.IdUserNavigation)}",
+                filter: c => c.IdCourseNavigation.IdMainCourse == id && c.IdUser != null && c.IsTask != null);
+
+
+            return courses.ToList();
+        }
+
+        [Authorize]
+        [HttpGet("Tests.IdUser={idUser:int}&IdCourse={idCourse:int}")]
+        public int? GetTestMarkForUser([FromRoute] int idUser, [FromRoute] int idCourse)
+        {
+            var courseAttachment = _unitOfWork.CourseAttachmentRepository
+                .Get(filter: c => c.IdUser == idUser && c.IdCourse == idCourse && c.IsTask == false)
+                .FirstOrDefault();
+
+            if (courseAttachment == null)
+            {
+                return null;
+            }
+
+            return courseAttachment.Mark ?? -1;
         }
 
         [Authorize]
@@ -63,6 +95,36 @@ namespace SignalIRServerTest.Controllers
             catch (Exception e)
             {
                 _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddTask)));
+                return false;
+            }
+        }
+
+        [Authorize]
+        [HttpPost("Tests.IdUser={idUser:int}&IdCourse={idCourse:int}&Mark={mark:int}")]
+        public bool AddTest([FromRoute] int idUser, int idCourse, int mark)
+        {
+            if (!byte.TryParse(mark.ToString(), out var markByte))
+            {
+                return false;
+            }
+            try
+            {
+                var courseAttachment = new CourseAttachment
+                {
+                    IdCourse = idCourse,
+                    IdUser = idUser,
+                    Mark = markByte,
+                    IsTask = false,
+                    SendTime = DateTime.Now
+                };
+                _unitOfWork.CourseAttachmentRepository
+                    .Insert(courseAttachment);
+                _unitOfWork.Save();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, StringDecorator.GetDecoratedLogString(e.GetType(), nameof(AddTest)));
                 return false;
             }
         }
@@ -256,6 +318,10 @@ namespace SignalIRServerTest.Controllers
                         }
                     }
 
+                    _unitOfWork.TestFrameRepository
+                        .Insert(course.IdCourseNavigation.IdTestFrameNavigation);
+                    _unitOfWork.Save();
+
                     course.IdCourseNavigation.IdMainCourseNavigation = null;
                     course.IdCourseNavigation.Position = position + 1;
 
@@ -446,6 +512,34 @@ namespace SignalIRServerTest.Controllers
                     AddOrUpdateCourseAttachments(courses, foundDbCourse, isAllCoursesWithoutAttachments);
                     _unitOfWork.Save();
                     return true;
+                }
+
+                if (firstCourse.IdTestFrameNavigation != null)
+                {
+                    var dbTestFrame = foundDbCourse.IdTestFrameNavigation;
+
+                    if (firstCourse.IdTestFrame is 0 or null)
+                    {
+                        if (dbTestFrame != null)
+                        {
+                            _unitOfWork.TestFrameRepository
+                                .Delete(dbTestFrame);
+                        }
+                        
+                        foundDbCourse.IdTestFrameNavigation = firstCourse.IdTestFrameNavigation;
+                        _unitOfWork.Save();
+                    }
+                    else if (firstCourse.IdTestFrame == dbTestFrame.Id)
+                    {
+                        foreach (var testPage in dbTestFrame.TestPages)
+                        {
+                            _unitOfWork.TestPageRepository
+                                .Delete(testPage);
+                        }
+
+                        dbTestFrame.TestPages = firstCourse.IdTestFrameNavigation.TestPages;
+                        _unitOfWork.Save();
+                    }
                 }
 
                 foundDbCourse.Title = firstCourse?.Title;

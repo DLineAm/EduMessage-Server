@@ -14,6 +14,7 @@ namespace SignalIRServerTest.Models
         public int? IdUser { get; set; }
         public DateTime? SendTime { get; set; }
         public string Comment { get; set; }
+        public bool? IsTask { get; set; }
 
         public virtual Attachment IdAttachmanentNavigation { get; set; }
         public virtual Course IdCourseNavigation { get; set; }
